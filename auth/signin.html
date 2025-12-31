@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSterile - Sign In</title>
+    <link rel="stylesheet" href="../styles/theme.css">
+    <link rel="stylesheet" href="../styles/animations.css">
+    <style>
+        .auth-container {
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        }
+
+        .auth-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: var(--space-8);
+        }
+
+        .auth-left {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-teal) 100%);
+            color: white;
+            display: none;
+        }
+
+        .auth-right {
+            background-color: var(--bg-primary);
+        }
+
+        @media (min-width: 768px) {
+            .auth-left {
+                display: flex;
+            }
+
+            .auth-left>div {
+                max-width: 400px;
+            }
+
+            .auth-right {
+                flex: 1;
+            }
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+
+        .auth-logo {
+            font-size: 3rem;
+            margin-bottom: var(--space-4);
+        }
+
+        .auth-header h1 {
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .auth-header p {
+            color: var(--text-tertiary);
+            margin: 0;
+        }
+
+        .form-divider {
+            display: flex;
+            align-items: center;
+            margin: var(--space-6) 0;
+            gap: var(--space-4);
+        }
+
+        .form-divider::before,
+        .form-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: var(--bg-tertiary);
+        }
+
+        .form-divider-text {
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+        }
+
+        .social-buttons {
+            display: flex;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .social-btn {
+            flex: 1;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--gray-600);
+            background-color: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            font-weight: 500;
+        }
+
+        .social-btn:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--primary-color);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: var(--space-6);
+            color: var(--text-tertiary);
+        }
+
+        .auth-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            margin-bottom: var(--space-6);
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: var(--space-6);
+        }
+
+        .forgot-password a {
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            color: var(--primary-color);
+        }
+
+        .test-credentials {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            margin-bottom: var(--space-6);
+            font-size: 0.875rem;
+        }
+
+        .test-credentials-title {
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .test-credentials-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-2);
+            color: var(--text-secondary);
+        }
+
+        .test-credentials-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: opacity var(--transition-fast);
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .auth-panel {
+                padding: var(--space-6);
+            }
+
+            .auth-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <!-- Left Panel (Hidden on mobile) -->
+        <div class="auth-panel auth-left">
+            <div>
+                <h2 style="font-size: 2rem; margin-bottom: var(--space-6);">🌱 Welcome Back</h2>
+                <p style="font-size: 1.125rem; line-height: 1.8; opacity: 0.95;">
+                    Monitor your crops in real-time, control pH levels precisely, and maximize your yield with
+                    intelligent automation.
+                </p>
+                <div
+                    style="margin-top: var(--space-8); padding-top: var(--space-8); border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div
+                        style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                        <span>✓ Real-time pH Monitoring</span>
+                    </div>
+                    <div
+                        style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                        <span>✓ Automated Pump Control</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <span>✓ Historical Data & Analytics</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="auth-panel auth-right">
+            <div class="auth-box fade-in">
+                <div class="auth-header">
+                    <div class="auth-logo">🌿</div>
+                    <h1>EcoSterile</h1>
+                    <p>pH Regulator Dashboard</p>
+                </div>
+
+                <!-- Alert Messages -->
+                <div id="alertBox"></div>
+
+                <!-- Test Credentials Demo -->
+                <div class="test-credentials">
+                    <div class="test-credentials-title">🧪 Demo Credentials</div>
+                    <div class="test-credentials-item"
+                        style="color: var(--text-tertiary); font-size: 0.8rem; margin-bottom: var(--space-3);">
+                        Create account first or use Google OAuth to get started
+                    </div>
+                    <div class="test-credentials-item">
+                        <span>📧 test@example.com</span>
+                        <button type="button" class="copy-btn"
+                            onclick="copyToClipboard('test@example.com')">copy</button>
+                    </div>
+                    <div class="test-credentials-item">
+                        <span>🔐 Test@12345</span>
+                        <button type="button" class="copy-btn" onclick="copyToClipboard('Test@12345')">copy</button>
+                    </div>
+                </div>
+
+                <!-- Sign In Form -->
+                <form id="signInForm">
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="email" placeholder="you@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+
+                    <div class="forgot-password">
+                        <a href="reset-password.html">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: var(--space-4);">
+                        <span id="btnText">Sign In</span>
+                        <span id="spinner" class="spinner" style="display: none;"></span>
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="form-divider">
+                    <span class="form-divider-text">OR</span>
+                </div>
+
+                <!-- Social Sign In -->
+                <div class="social-buttons">
+                    <button type="button" class="social-btn" id="googleSignIn">
+                        🔵 Google
+                    </button>
+                </div>
+
+                <!-- Sign Up Link -->
+                <div class="auth-footer">
+                    Don't have an account? <a href="signup.html">Create one now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { authService } from '../services/firebase.js';
+
+        // Copy to clipboard utility
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const alertBox = document.getElementById('alertBox');
+                alertBox.innerHTML = `<div class="alert alert-success">Copied to clipboard!</div>`;
+                setTimeout(() => {
+                    alertBox.innerHTML = '';
+                }, 2000);
+            });
+        }
+
+        // Make copyToClipboard globally available
+        window.copyToClipboard = copyToClipboard;
+
+        const form = document.getElementById('signInForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const alertBox = document.getElementById('alertBox');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const googleSignIn = document.getElementById('googleSignIn');
+
+        // Show Alert
+        function showAlert(message, type = 'error') {
+            const alertClass = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-danger';
+            alertBox.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            setTimeout(() => {
+                alertBox.innerHTML = '';
+            }, 5000);
+        }
+
+        // Sign In Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                showAlert('Please fill in all fields');
+                return;
+            }
+
+            // Show loading state
+            form.classList.add('loading');
+            btnText.textContent = 'Signing in...';
+            spinner.style.display = 'inline-block';
+
+            const result = await authService.signIn(email, password);
+
+            if (result.success) {
+                showAlert('Sign in successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = '../dashboard/dashboard.html';
+                }, 1500);
+            } else {
+                showAlert(result.error || 'Sign in failed');
+                form.classList.remove('loading');
+                btnText.textContent = 'Sign In';
+                spinner.style.display = 'none';
+            }
+        });
+
+        // Google Sign In
+        googleSignIn.addEventListener('click', async () => {
+            googleSignIn.disabled = true;
+            googleSignIn.textContent = '⏳ Signing in...';
+
+            const result = await authService.signInWithGoogle();
+
+            if (result.success) {
+                showAlert('Sign in successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = '../dashboard/dashboard.html';
+                }, 1500);
+            } else {
+                showAlert(result.error || 'Google sign in failed');
+                googleSignIn.disabled = false;
+                googleSignIn.textContent = '🔵 Google';
+            }
+        });
+
+        // Check if already signed in
+        authService.onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = '../dashboard/dashboard.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

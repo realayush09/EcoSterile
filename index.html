@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSterile-Pro - pH Regulator Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: #cbd5e1;
+            margin-bottom: 40px;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            line-height: 1.8;
+            margin-bottom: 60px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 16px 40px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border: 2px solid #10b981;
+        }
+
+        .btn-secondary:hover {
+            background-color: #334155;
+            transform: translateY(-2px);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 80px;
+            padding-top: 60px;
+            border-top: 1px solid rgba(15, 23, 42, 0.1);
+        }
+
+        .feature-card {
+            padding: 30px;
+            background-color: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: #10b981;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #f1f5f9;
+        }
+
+        .feature-desc {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+
+        .footer {
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(15, 23, 42, 0.1);
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .version {
+            display: inline-block;
+            background-color: rgba(16, 185, 129, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+
+            .logo {
+                font-size: 60px;
+            }
+        }
+
+        .docs-section {
+            margin-top: 60px;
+            padding: 40px;
+            background-color: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.1);
+        }
+
+        .docs-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #f1f5f9;
+        }
+
+        .docs-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .doc-link {
+            padding: 12px 20px;
+            background-color: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 8px;
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .doc-link:hover {
+            background-color: rgba(16, 185, 129, 0.15);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🌿</div>
+            <h1>EcoSterile-Pro</h1>
+            <p class="subtitle">Professional pH Regulator Dashboard</p>
+            <div class="version">v1.0.0 — Production Ready</div>
+        </div>
+
+        <p class="description">
+            Real-time pH monitoring and automated pump control for agricultural systems.
+            <br>
+            Industrial-grade monitoring dashboard built for precision and reliability.
+        </p>
+
+        <div class="buttons">
+            <a href="auth/signin.html" class="btn btn-primary">
+                🚀 Launch Dashboard
+            </a>
+            <a href="README.md" class="btn btn-secondary">
+                📖 Documentation
+            </a>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Real-time Monitoring</div>
+                <div class="feature-desc">Live pH readings with interactive trend graphs and historical data</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">⚙️</div>
+                <div class="feature-title">Smart Pump Control</div>
+                <div class="feature-desc">Automatic activation based on optimal pH ranges for your crop</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🌾</div>
+                <div class="feature-title">Crop Management</div>
+                <div class="feature-desc">50+ crops with customizable optimal pH ranges</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <div class="feature-title">Secure Auth</div>
+                <div class="feature-desc">Professional authentication with email and Google OAuth</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <div class="feature-title">Dark & Light Theme</div>
+                <div class="feature-desc">Industrial-grade UI with smooth theme switching</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <div class="feature-title">Responsive Design</div>
+                <div class="feature-desc">Works perfectly on desktop, tablet, and mobile devices</div>
+            </div>
+        </div>
+
+        <!-- Documentation Section -->
+        <div class="docs-section">
+            <div class="docs-title">📚 Getting Started</div>
+            <div class="docs-links">
+                <a href="QUICKSTART.md" class="doc-link">⚡ Quick Start</a>
+                <a href="README.md" class="doc-link">📖 Full Docs</a>
+                <a href="PROJECT_SUMMARY.md" class="doc-link">📋 Summary</a>
+                <a href="IMPLEMENTATION_CHECKLIST.md" class="doc-link">✅ Checklist</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                🌱 EcoSterile-Pro • Production-Ready Dashboard<br>
+                <strong>Version 1.0.0</strong> • December 31, 2025<br>
+                Built with HTML5, CSS3, JavaScript, and Firebase
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

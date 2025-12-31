@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSterile - Dashboard</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="../styles/theme.css">
+    <link rel="stylesheet" href="../styles/animations.css">
+    <link rel="stylesheet" href="../styles/dashboard.css">
+
+    <!-- Chart.js for pH graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div id="headerComponent"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="dashboard-content">
+            <div class="dashboard-body">
+                <!-- Status Indicators -->
+                <div id="statusComponent"></div>
+
+                <!-- pH Monitoring Panel -->
+                <section class="ph-monitoring-panel">
+                    <h2 style="margin-top: 0;">📊 Real-time pH Monitoring</h2>
+
+                    <div class="ph-display">
+                        <div class="ph-gauge">
+                            <div class="ph-value" id="phValue">7.0</div>
+                            <div class="ph-status" id="phStatus">🟢 Optimal</div>
+                            <div class="ph-scale">
+                                <div class="ph-indicator" id="phIndicator"></div>
+                            </div>
+                            <div style="font-size: 0.9rem; color: var(--text-tertiary);">
+                                <span id="optimalRangeDisplay">6.5 - 7.5</span>
+                            </div>
+                        </div>
+
+                        <div class="ph-info">
+                            <div class="ph-info-item">
+                                <div class="ph-info-label">Average pH</div>
+                                <div class="ph-info-value" id="avgPH">7.0</div>
+                            </div>
+                            <div class="ph-info-item">
+                                <div class="ph-info-label">pH Range (24h)</div>
+                                <div class="ph-info-value" id="phRange">6.8 - 7.2</div>
+                            </div>
+                            <div class="ph-info-item">
+                                <div class="ph-info-label">Basic Pump Uses</div>
+                                <div class="ph-info-value" id="basicPumpCount">0</div>
+                            </div>
+                            <div class="ph-info-item">
+                                <div class="ph-info-label">Acidic Pump Uses</div>
+                                <div class="ph-info-value" id="acidicPumpCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- pH Chart -->
+                    <div style="margin-top: var(--space-8);">
+                        <h4 style="margin-bottom: var(--space-4);">pH Trend Graph</h4>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="phChart"></canvas>
+                        </div>
+                        <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
+                            <button class="btn btn-secondary time-filter-btn" data-range="24h">24 Hours</button>
+                            <button class="btn btn-secondary time-filter-btn" data-range="7d">7 Days</button>
+                            <button class="btn btn-secondary time-filter-btn" data-range="30d">30 Days</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pump Activity Log -->
+                <section class="pump-log-section">
+                    <h3 class="section-title">⏱️ Pump Activity Timeline</h3>
+                    <div id="pumpLogComponent"></div>
+                </section>
+
+                <!-- Crop Selection -->
+                <section class="crop-selector">
+                    <h3 class="section-title">🌾 Crop Type Selection</h3>
+                    <div id="cropCardsComponent"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="dashboard.js"></script>
+</body>
+
+</html>
