@@ -25,7 +25,6 @@ Successfully eliminated all external API dependencies for location selection by 
 
 - `async loadStates()` - HTTP GET to proxy server
 - `async loadDistricts(stateCode)` - HTTP GET to proxy server
-- `async loadTalukas(districtCode)` - HTTP GET to proxy server
 - `async loadVillages(talukaCode)` - HTTP GET to proxy server
 - `populateSelect(level, data)` - Helper for API-based population
 
@@ -64,22 +63,14 @@ Successfully eliminated all external API dependencies for location selection by 
 #### `populateTalukas(stateName, districtName)`
 
 ```javascript
-// Deep path: locationsDatabase.India[stateName][districtName]
+// Accesses locationsDatabase.India[stateName][districtName]
 // Gets all talukas for selected district
-// Instantly available from memory
-```
-
-#### `populateVillages(stateName, districtName, talukaName)`
-
-```javascript
-// Deep path: locationsDatabase.India[stateName][districtName][talukaName]
-// Returns array of village objects: [{name, code}, ...]
-// Villages stored as JSON in option.value for later parsing
+// Instant dropdown update
 ```
 
 ### 3. **Updated Event Handlers**
 
-All 4 change handlers now use new synchronous populate methods:
+All 3 change handlers now use new synchronous populate methods:
 
 #### `onStateChange()`
 
@@ -92,9 +83,10 @@ this.populateDistricts(selectedStateName); // Populate next level
 #### `onDistrictChange()`
 
 ```javascript
+const selectedStateName = this.selected.state;
 const selectedDistrictName = this.district.select.value;
 this.selected.district = selectedDistrictName;
-this.populateTalukas(this.selected.state, selectedDistrictName);
+this.populateTalukas(selectedStateName, selectedDistrictName); // Populate next level
 ```
 
 #### `onTalukaChange()`
@@ -102,19 +94,6 @@ this.populateTalukas(this.selected.state, selectedDistrictName);
 ```javascript
 const selectedTalukaName = this.taluka.select.value;
 this.selected.taluka = selectedTalukaName;
-this.populateVillages(
-  this.selected.state,
-  this.selected.district,
-  selectedTalukaName
-);
-```
-
-#### `onVillageChange()`
-
-```javascript
-const selectedVillageJSON = this.village.select.value;
-const selectedVillage = JSON.parse(selectedVillageJSON); // {name, code}
-this.selected.village = selectedVillage;
 ```
 
 ### 4. **Updated Form Submission**
@@ -127,7 +106,6 @@ const structuredLocation = {
   state: { name: locationData.state },
   district: { name: locationData.district },
   taluka: { name: locationData.taluka },
-  village: locationData.village, // {name, code} from JSON
   updatedAt: now,
 };
 
@@ -146,7 +124,7 @@ await set(ref(db, `users/${userId}/location`), structuredLocation);
     "StateName": {
       "DistrictName": {
         "TalukaName": [
-          { "name": "VillageName", "code": "CODE" },
+          { "name": "LocationName" },
           ...
         ]
       }
@@ -155,7 +133,7 @@ await set(ref(db, `users/${userId}/location`), structuredLocation);
 }
 ```
 
-**Coverage:** 28+ states with representative districts, talukas, and villages
+**Coverage:** 28+ states with representative districts, talukas and locations
 
 ---
 
@@ -178,10 +156,8 @@ await set(ref(db, `users/${userId}/location`), structuredLocation);
 - [x] JSON file loads correctly on signup page
 - [x] States dropdown populates from JSON
 - [x] Districts populate when state selected
-- [x] Talukas populate when district selected
-- [x] Villages populate when taluka selected
 - [x] Parent dropdown change clears children
-- [x] All 4 levels required for form submission
+- [x] All 3 levels required for form submission
 - [x] Location saves to Firebase with correct structure
 - [x] No external API calls in network tab
 
@@ -235,16 +211,16 @@ await set(ref(db, `users/${userId}/location`), structuredLocation);
 
 1. **auth/signup.html** (896 lines, down from 907)
    - ✅ Removed: 4 async load methods + populateSelect (100 lines)
-   - ✅ Updated: 4 event handlers (onStateChange, onDistrictChange, onTalukaChange, onVillageChange)
+   - ✅ Updated: 3 event handlers (onStateChange, onDistrictChange, onTalukaChange)
    - ✅ Updated: Form submission location structure
    - ✅ Added: loadLocationsDatabase() method
-   - ✅ Added: 4 populate methods (populateStates, populateDistricts, populateTalukas, populateVillages)
+   - ✅ Added: 3 populate methods (populateStates, populateDistricts, populateTalukas)
 
 ### New Files
 
 1. **data/indiaLocations.json** (330 lines)
-   - ✅ Hierarchical structure: India → States → Districts → Talukas → Villages
-   - ✅ Each village has {name, code} properties
+   - ✅ Hierarchical structure: India → States → Districts → Talukas → Locations
+   - ✅ Each location has {name} property
    - ✅ 28+ states with representative data
 
 ### Deprecated Files
@@ -354,9 +330,9 @@ console.log(locationsDatabase.India.Maharashtra.Mumbai.Mumbai);
 
 - [x] Create indiaLocations.json with hierarchical structure
 - [x] Refactor LocationSelector.init() to load JSON
-- [x] Add 4 populate methods for each level
+- [x] Add 3 populate methods for each level
 - [x] Remove 4 old async load methods
-- [x] Update 4 event handlers to use populate methods
+- [x] Update 3 event handlers to use populate methods
 - [x] Update form submission location format
 - [x] Test cascading dropdowns
 - [x] Test Firebase location save
