@@ -815,7 +815,7 @@
                     const userId = result.user.uid;
                     const now = new Date().toISOString();
 
-                    // Build structured location - State, District, Taluka only
+                    // Build structured location - State, District, and Taluka
                     const structuredLocation = {
                         country: "India",
                         state: { name: locationData.state },

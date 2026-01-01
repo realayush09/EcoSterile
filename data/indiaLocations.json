@@ -1,322 +1,891 @@
 {
   "India": {
     "Andaman and Nicobar Islands": {
+      "Nicobars": {
+        "Car Nicobar": [
+          { "name": "Car Nicobar" }
+        ],
+        "Nancowry": [
+          { "name": "Nancowry" }
+        ],
+        "Great Nicobar": [
+          { "name": "Great Nicobar" }
+        ]
+      },
       "North And Middle Andaman": {
+        "Diglipur": [
+          { "name": "Diglipur" }
+        ],
         "Mayabunder": [
-          { "name": "Mayabunder", "code": "530001" }
+          { "name": "Mayabunder" }
+        ],
+        "Rangat": [
+          { "name": "Rangat" }
+        ]
+      },
+      "South Andaman": {
+        "Ferrargunj": [
+          { "name": "Ferrargunj" }
+        ],
+        "Port Blair": [
+          { "name": "Port Blair" }
+        ],
+        "Little Andaman": [
+          { "name": "Little Andaman" }
         ]
       }
     },
     "Andhra Pradesh": {
-      "Anantapur": {
-        "Anantapur": [
-          { "name": "Anantapur", "code": "280001" },
-          { "name": "Kalyandurg", "code": "280002" }
+      "Adilabad": {
+        "Tamsi": [
+          { "name": "Tamsi" }
+        ],
+        "Adilabad": [
+          { "name": "Adilabad" }
+        ],
+        "Jainad": [
+          { "name": "Jainad" }
+        ],
+        "Bela": [
+          { "name": "Bela" }
+        ],
+        "Talamadugu": [
+          { "name": "Talamadugu" }
+        ],
+        "Gudihatnnoor": [
+          { "name": "Gudihatnnoor" }
+        ],
+        "Inderavelly": [
+          { "name": "Inderavelly" }
+        ],
+        "Narnoor": [
+          { "name": "Narnoor" }
+        ],
+        "Kerameri": [
+          { "name": "Kerameri" }
+        ],
+        "Wankdi": [
+          { "name": "Wankdi" }
+        ],
+        "Sirpur (T)": [
+          { "name": "Sirpur (T)" }
+        ],
+        "Kouthala": [
+          { "name": "Kouthala" }
+        ],
+        "Bejjur": [
+          { "name": "Bejjur" }
+        ],
+        "Kagaznagar": [
+          { "name": "Kagaznagar" }
+        ],
+        "Asifabad": [
+          { "name": "Asifabad" }
+        ],
+        "Jainoor": [
+          { "name": "Jainoor" }
+        ],
+        "Utnoor": [
+          { "name": "Utnoor" }
+        ],
+        "Ichoda": [
+          { "name": "Ichoda" }
+        ],
+        "Bazarhathnoor": [
+          { "name": "Bazarhathnoor" }
+        ],
+        "Boath": [
+          { "name": "Boath" }
+        ],
+        "Neradigonda": [
+          { "name": "Neradigonda" }
+        ],
+        "Sirpur": [
+          { "name": "Sirpur" }
+        ],
+        "Rebbana": [
+          { "name": "Rebbana" }
+        ],
+        "Bhimini": [
+          { "name": "Bhimini" }
+        ],
+        "Dahegaon": [
+          { "name": "Dahegaon" }
+        ],
+        "Vemanpalle": [
+          { "name": "Vemanpalle" }
+        ],
+        "Nennal": [
+          { "name": "Nennal" }
+        ],
+        "Tandur": [
+          { "name": "Tandur" }
+        ],
+        "Tiryani": [
+          { "name": "Tiryani" }
+        ],
+        "Jannaram": [
+          { "name": "Jannaram" }
+        ],
+        "Kaddam (Peddur)": [
+          { "name": "Kaddam (Peddur)" }
+        ],
+        "Sarangapur": [
+          { "name": "Sarangapur" }
+        ],
+        "Kuntala": [
+          { "name": "Kuntala" }
+        ],
+        "Kubeer": [
+          { "name": "Kubeer" }
+        ],
+        "Bhainsa": [
+          { "name": "Bhainsa" }
+        ],
+        "Tanoor": [
+          { "name": "Tanoor" }
+        ],
+        "Mudhole": [
+          { "name": "Mudhole" }
+        ],
+        "Lokeswaram": [
+          { "name": "Lokeswaram" }
+        ],
+        "Dilawarpur": [
+          { "name": "Dilawarpur" }
+        ],
+        "Nirmal": [
+          { "name": "Nirmal" }
+        ],
+        "Laxmanchanda": [
+          { "name": "Laxmanchanda" }
+        ],
+        "Mamda": [
+          { "name": "Mamda" }
+        ],
+        "Khanapur": [
+          { "name": "Khanapur" }
+        ],
+        "Dandepalle": [
+          { "name": "Dandepalle" }
+        ],
+        "Kasipet": [
+          { "name": "Kasipet" }
+        ],
+        "Bellampalle": [
+          { "name": "Bellampalle" }
+        ],
+        "Kotapalle": [
+          { "name": "Kotapalle" }
+        ],
+        "Mandamarri": [
+          { "name": "Mandamarri" }
+        ],
+        "Luxettipet": [
+          { "name": "Luxettipet" }
+        ],
+        "Mancherial": [
+          { "name": "Mancherial" }
+        ],
+        "Jaipur": [
+          { "name": "Jaipur" }
+        ],
+        "Chennur": [
+          { "name": "Chennur" }
         ]
       },
-      "Chittoor": {
-        "Chittoor": [
-          { "name": "Chittoor", "code": "280101" }
+      "Nizamabad": {
+        "Ranjal": [
+          { "name": "Ranjal" }
+        ],
+        "Navipet": [
+          { "name": "Navipet" }
+        ],
+        "Nandipet": [
+          { "name": "Nandipet" }
+        ],
+        "Armur": [
+          { "name": "Armur" }
+        ],
+        "Balkonda": [
+          { "name": "Balkonda" }
+        ],
+        "Mortad": [
+          { "name": "Mortad" }
+        ],
+        "Kammarpalle": [
+          { "name": "Kammarpalle" }
+        ],
+        "Bheemgal": [
+          { "name": "Bheemgal" }
+        ],
+        "Velpur": [
+          { "name": "Velpur" }
+        ],
+        "Jakranpalle": [
+          { "name": "Jakranpalle" }
+        ],
+        "Makloor": [
+          { "name": "Makloor" }
+        ],
+        "Nizamabad": [
+          { "name": "Nizamabad" }
+        ],
+        "Yedpalle": [
+          { "name": "Yedpalle" }
+        ],
+        "Bodhan": [
+          { "name": "Bodhan" }
+        ],
+        "Kotgiri": [
+          { "name": "Kotgiri" }
+        ],
+        "Madnoor": [
+          { "name": "Madnoor" }
+        ],
+        "Jukkal": [
+          { "name": "Jukkal" }
+        ],
+        "Bichkunda": [
+          { "name": "Bichkunda" }
+        ],
+        "Birkoor": [
+          { "name": "Birkoor" }
+        ],
+        "Varni": [
+          { "name": "Varni" }
+        ],
+        "Dichpalle": [
+          { "name": "Dichpalle" }
+        ],
+        "Dharpalle": [
+          { "name": "Dharpalle" }
+        ],
+        "Sirkonda": [
+          { "name": "Sirkonda" }
+        ],
+        "Machareddy": [
+          { "name": "Machareddy" }
+        ],
+        "Sadasivanagar": [
+          { "name": "Sadasivanagar" }
+        ],
+        "Gandhari": [
+          { "name": "Gandhari" }
+        ],
+        "Banswada": [
+          { "name": "Banswada" }
+        ],
+        "Pitlam": [
+          { "name": "Pitlam" }
+        ],
+        "Nizamsagar": [
+          { "name": "Nizamsagar" }
+        ],
+        "Yellareddy": [
+          { "name": "Yellareddy" }
+        ],
+        "Nagareddipet": [
+          { "name": "Nagareddipet" }
+        ],
+        "Lingampet": [
+          { "name": "Lingampet" }
+        ],
+        "Tadwai": [
+          { "name": "Tadwai" }
+        ],
+        "Kamareddy": [
+          { "name": "Kamareddy" }
+        ],
+        "Bhiknoor": [
+          { "name": "Bhiknoor" }
+        ],
+        "Domakonda": [
+          { "name": "Domakonda" }
         ]
+      },
+      "Karimnagar": {
+        "Ibrahimpatnam": [
+          { "name": "Ibrahimpatnam" }
+        ],
+        "Mallapur": [
+          { "name": "Mallapur" }
+        ],
+        "Raikal": [
+          { "name": "Raikal" }
+        ],
+        "Sarangapur": [
+          { "name": "Sarangapur" }
+        ],
+        "Dharmapuri": [
+          { "name": "Dharmapuri" }
+        ],
+        "Velgatoor": [
+          { "name": "Velgatoor" }
+        ],
+        "Ramagundam": [
+          { "name": "Ramagundam" }
+        ],
+        "Kamampur": [
+          { "name": "Kamampur" }
+        ],
+        "Kamanpur": [
+          { "name": "Kamanpur" }
+        ],
+        "Manthani": [
+          { "name": "Manthani" }
+        ],
+        "Kataram": [
+          { "name": "Kataram" }
+        ],
+        "Mahadevpur": [
+          { "name": "Mahadevpur" }
+        ],
+        "Mutharam (Mahadevpur)": [
+          { "name": "Mutharam (Mahadevpur)" }
+        ],
+        "Malharrao": [
+          { "name": "Malharrao" }
+        ],
+        "Mutharam (Manthani)": [
+          { "name": "Mutharam (Manthani)" }
+        ],
+        "Srirampur": [
+          { "name": "Srirampur" }
+        ],
+        "Peddapalle": [
+          { "name": "Peddapalle" }
+        ],
+        "Julapalle": [
+          { "name": "Julapalle" }
+        ],
+        "Elgaid": [
+          { "name": "Elgaid" }
+        ],
+        "Dharmaram": [
+          { "name": "Dharmaram" }
+        ],
+        "Gollapalle": [
+          { "name": "Gollapalle" }
+        ],
+        "Mallial": [
+          { "name": "Mallial" }
+        ],
+        "Jagtial": [
+          { "name": "Jagtial" }
+        ],
+        "Medipalle": [
+          { "name": "Medipalle" }
+        ],
+        "Koratla": [
+          { "name": "Koratla" }
+        ],
+        "Metpalle": [
+          { "name": "Metpalle" }
+        ],
+        "Kathlapur": [
+          { "name": "Kathlapur" }
+        ],
+        "Chandurthi": [
+          { "name": "Chandurthi" }
+        ],
+        "Kodimial": [
+          { "name": "Kodimial" }
+        ],
+        "Pegadapalle": [
+          { "name": "Pegadapalle" }
+        ],
+        "Gangadhara": [
+          { "name": "Gangadhara" }
+        ],
+        "Ramadugu": [
+          { "name": "Ramadugu" }
+        ],
+        "Choppadandi": [
+          { "name": "Choppadandi" }
+        ],
+        "Sultanabad": [
+          { "name": "Sultanabad" }
+        ],
+        "Odela": [
+          { "name": "Odela" }
+        ],
+        "Manakondur": [
+          { "name": "Manakondur" }
+        ],
+        "Karimnagar": [
+          { "name": "Karimnagar" }
+        ],
+        "Boinpalle": [
+          { "name": "Boinpalle" }
+        ],
+        "Vemulawada": [
+          { "name": "Vemulawada" }
+        ],
+        "Konaraopeta": [
+          { "name": "Konaraopeta" }
+        ],
+        "Yellareddipet": [
+          { "name": "Yellareddipet" }
+        ],
+        "Gambhiraopet": [
+          { "name": "Gambhiraopet" }
+        ]
+      },
+      "Medak": {
+        "Medak": [{ "name": "Medak" }],
+        "Ramayampet": [{ "name": "Ramayampet" }],
+        "Narsapur": [{ "name": "Narsapur" }],
+        "Shankarampet-R": [{ "name": "Shankarampet-R" }],
+        "Shankarampet-A": [{ "name": "Shankarampet-A" }],
+        "Papannapet": [{ "name": "Papannapet" }],
+        "Tekmal": [{ "name": "Tekmal" }],
+        "Kulcharam": [{ "name": "Kulcharam" }],
+        "Kowdipally": [{ "name": "Kowdipally" }],
+        "Chegunta": [{ "name": "Chegunta" }],
+        "Toopran": [{ "name": "Toopran" }],
+        "Manoharabad": [{ "name": "Manoharabad" }],
+        "Yeldurthy": [{ "name": "Yeldurthy" }],
+        "Narsingi": [{ "name": "Narsingi" }],
+        "Regode": [{ "name": "Regode" }],
+        "Alladurg": [{ "name": "Alladurg" }],
+        "Chilipched": [{ "name": "Chilipched" }],
+        "Shivampet": [{ "name": "Shivampet" }],
+        "Havelighanpur": [{ "name": "Havelighanpur" }],
+        "Pulkal": [{ "name": "Pulkal" }],
+        "Hatnoora": [{ "name": "Hatnoora" }]
+      },
+      "Hyderabad": {
+        "Amberpet": [{ "name": "Amberpet" }],
+        "Ameerpet": [{ "name": "Ameerpet" }],
+        "Asifnagar": [{ "name": "Asifnagar" }],
+        "Bahadurpura": [{ "name": "Bahadurpura" }],
+        "Bandlaguda": [{ "name": "Bandlaguda" }],
+        "Charminar": [{ "name": "Charminar" }],
+        "Golconda": [{ "name": "Golconda" }],
+        "Himayathnagar": [{ "name": "Himayathnagar" }],
+        "Khairatabad": [{ "name": "Khairatabad" }],
+        "Marredpally": [{ "name": "Marredpally" }],
+        "Musheerabad": [{ "name": "Musheerabad" }],
+        "Nampally": [{ "name": "Nampally" }],
+        "Saidabad": [{ "name": "Saidabad" }],
+        "Secunderabad": [{ "name": "Secunderabad" }],
+        "Shaikpet": [{ "name": "Shaikpet" }],
+        "Trimulgherry": [{ "name": "Trimulgherry" }]
+      },
+      "Rangareddy": {
+        "Abdullapurmet": [{ "name": "Abdullapurmet" }],
+        "Amangal": [{ "name": "Amangal" }],
+        "Balapur": [{ "name": "Balapur" }],
+        "Chevella": [{ "name": "Chevella" }],
+        "Farooqnagar": [{ "name": "Farooqnagar" }],
+        "Gandipet": [{ "name": "Gandipet" }],
+        "Hayathnagar": [{ "name": "Hayathnagar" }],
+        "Ibrahimpatnam": [{ "name": "Ibrahimpatnam" }],
+        "Kadthal": [{ "name": "Kadthal" }],
+        "Kandukur": [{ "name": "Kandukur" }],
+        "Keesara": [{ "name": "Keesara" }],
+        "Kondurg": [{ "name": "Kondurg" }],
+        "Kothur": [{ "name": "Kothur" }],
+        "Maheshwaram": [{ "name": "Maheshwaram" }],
+        "Manchal": [{ "name": "Manchal" }],
+        "Moinabad": [{ "name": "Moinabad" }],
+        "Narsingi": [{ "name": "Narsingi" }],
+        "Rajendranagar": [{ "name": "Rajendranagar" }],
+        "Saroornagar": [{ "name": "Saroornagar" }],
+        "Serilingampalli": [{ "name": "Serilingampalli" }],
+        "Shabad": [{ "name": "Shabad" }],
+        "Shamshabad": [{ "name": "Shamshabad" }],
+        "Shankarpalle": [{ "name": "Shankarpalle" }],
+        "Thalakondapally": [{ "name": "Thalakondapally" }],
+        "Yacharam": [{ "name": "Yacharam" }],
+        "Medchal": [{ "name": "Medchal" }],
+        "Ghatkesar": [{ "name": "Ghatkesar" }],
+        "Shamirpet": [{ "name": "Shamirpet" }],
+        "Quthbullapur": [{ "name": "Quthbullapur" }],
+        "Malkajgiri": [{ "name": "Malkajgiri" }],
+        "Kapra": [{ "name": "Kapra" }],
+        "Uppal": [{ "name": "Uppal" }],
+        "LB Nagar": [{ "name": "LB Nagar" }],
+        "Hayathnagar (Urban)": [{ "name": "Hayathnagar (Urban)" }],
+        "Alwal": [{ "name": "Alwal" }],
+        "Balanagar": [{ "name": "Balanagar" }]
+      },
+      "Nalgonda": {
+        "Adavidevulapally": [{ "name": "Adavidevulapally" }],
+        "Anumula": [{ "name": "Anumula" }],
+        "Chandur": [{ "name": "Chandur" }],
+        "Chityala": [{ "name": "Chityala" }],
+        "Devarakonda": [{ "name": "Devarakonda" }],
+        "Gurrampode": [{ "name": "Gurrampode" }],
+        "Kattangoor": [{ "name": "Kattangoor" }],
+        "Kondamallepally": [{ "name": "Kondamallepally" }],
+        "Miryalguda": [{ "name": "Miryalguda" }],
+        "Munugode": [{ "name": "Munugode" }],
+        "Nakrekal": [{ "name": "Nakrekal" }],
+        "Nalgonda": [{ "name": "Nalgonda" }],
+        "Narketpally": [{ "name": "Narketpally" }],
+        "Peddavoora": [{ "name": "Peddavoora" }],
+        "Thipparthy": [{ "name": "Thipparthy" }],
+        "Tripuraram": [{ "name": "Tripuraram" }],
+        "Vemulapally": [{ "name": "Vemulapally" }],
+        "Chintha Pally": [{ "name": "Chintha Pally" }],
+        "Marriguda": [{ "name": "Marriguda" }],
+        "Mothkur": [{ "name": "Mothkur" }],
+        "Narayanpur": [{ "name": "Narayanpur" }],
+        "Sali Nagar": [{ "name": "Sali Nagar" }],
+        "Shaligouraram": [{ "name": "Shaligouraram" }],
+        "Thirumalgiri": [{ "name": "Thirumalgiri" }],
+        "Valigonda": [{ "name": "Valigonda" }],
+        "Yadagirigutta": [{ "name": "Yadagirigutta" }],
+        "Chivvemla": [{ "name": "Chivvemla" }],
+        "Kodad": [{ "name": "Kodad" }],
+        "Huzurnagar": [{ "name": "Huzurnagar" }],
+        "Mattampally": [{ "name": "Mattampally" }]
+      },
+      "Warangal": {
+        "Atmakur": [{ "name": "Atmakur" }],
+        "Bhupalpalle": [{ "name": "Bhupalpalle" }],
+        "Chennaraopet": [{ "name": "Chennaraopet" }],
+        "Cherial": [{ "name": "Cherial" }],
+        "Chityal": [{ "name": "Chityal" }],
+        "Devaruppula": [{ "name": "Devaruppula" }],
+        "Dharmasagar": [{ "name": "Dharmasagar" }],
+        "Duggondi": [{ "name": "Duggondi" }],
+        "Eturnagaram": [{ "name": "Eturnagaram" }],
+        "Geesugonda": [{ "name": "Geesugonda" }],
+        "Ghanpur (Station)": [{ "name": "Ghanpur (Station)" }],
+        "Govindaraopet": [{ "name": "Govindaraopet" }],
+        "Hanamkonda": [{ "name": "Hanamkonda" }],
+        "Hasanparthy": [{ "name": "Hasanparthy" }],
+        "Jangaon": [{ "name": "Jangaon" }],
+        "Kesamudram": [{ "name": "Kesamudram" }],
+        "Kodakandla": [{ "name": "Kodakandla" }],
+        "Lingala Ghanpur": [{ "name": "Lingala Ghanpur" }],
+        "Mahabubabad": [{ "name": "Mahabubabad" }],
+        "Maddur": [{ "name": "Maddur" }],
+        "Mangapet": [{ "name": "Mangapet" }],
+        "Maripeda": [{ "name": "Maripeda" }],
+        "Mulug": [{ "name": "Mulug" }],
+        "Narsampet": [{ "name": "Narsampet" }],
+        "Nekkonda": [{ "name": "Nekkonda" }],
+        "Palakurthi": [{ "name": "Palakurthi" }],
+        "Parvathagiri": [{ "name": "Parvathagiri" }],
+        "Raghunathpalle": [{ "name": "Raghunathpalle" }],
+        "Raiparthy": [{ "name": "Raiparthy" }],
+        "Shayampet": [{ "name": "Shayampet" }],
+        "Tadvai": [{ "name": "Tadvai" }],
+        "Wardhannapet": [{ "name": "Wardhannapet" }],
+        "Zaffergadh": [{ "name": "Zaffergadh" }],
+        "Bhupalapalli": [{ "name": "Bhupalapalli" }],
+        "Chennaraopet (Rural)": [{ "name": "Chennaraopet (Rural)" }],
+        "Cherla": [{ "name": "Cherla" }],
+        "Gudur": [{ "name": "Gudur" }],
+        "Kuravi": [{ "name": "Kuravi" }],
+        "Mogullapalle": [{ "name": "Mogullapalle" }],
+        "Nallabelly": [{ "name": "Nallabelly" }],
+        "Shayampet (Rural)": [{ "name": "Shayampet (Rural)" }],
+        "Venkatapur": [{ "name": "Venkatapur" }],
+        "Warangal": [{ "name": "Warangal" }]
       }
     },
     "Arunachal Pradesh": {
       "Papum Pare": {
         "Itanagar": [
-          { "name": "Itanagar", "code": "710001" }
+          { "name": "Itanagar" }
         ]
       }
     },
     "Assam": {
       "Karimganj": {
         "Karimganj": [
-          { "name": "Lafasail Pt III", "code": "299968" },
-          { "name": "Lafasail Pt II", "code": "299967" },
-          { "name": "Karimganj", "code": "299900" }
+          { "name": "Lafasail Pt III" },
+          { "name": "Lafasail Pt II" },
+          { "name": "Karimganj" }
         ]
       },
       "Barpeta": {
         "Barpeta": [
-          { "name": "Barpeta", "code": "300100" }
+          { "name": "Barpeta" }
         ]
       }
     },
     "Bihar": {
       "Patna": {
         "Patna": [
-          { "name": "Patna", "code": "310001" },
-          { "name": "Sampatchak", "code": "310002" }
+          { "name": "Patna" },
+          { "name": "Sampatchak" }
         ]
       },
       "Gaya": {
         "Gaya": [
-          { "name": "Gaya", "code": "320001" }
+          { "name": "Gaya" }
         ]
       }
     },
     "Chhattisgarh": {
       "Raipur": {
         "Raipur": [
-          { "name": "Raipur", "code": "340001" }
+          { "name": "Raipur" }
         ]
       }
     },
     "Goa": {
       "North Goa": {
         "Pernem": [
-          { "name": "Pernem", "code": "440001" }
+          { "name": "Pernem" }
         ]
       },
       "South Goa": {
         "Quepem": [
-          { "name": "Quepem", "code": "440101" }
+          { "name": "Quepem" }
         ]
       }
     },
     "Gujarat": {
       "Ahmedabad": {
         "Ahmedabad": [
-          { "name": "Ahmedabad", "code": "450001" },
-          { "name": "Bavla", "code": "450002" }
+          { "name": "Ahmedabad" },
+          { "name": "Bavla" }
         ]
       },
       "Vadodara": {
         "Vadodara": [
-          { "name": "Vadodara", "code": "460001" }
+          { "name": "Vadodara" }
         ]
       }
     },
     "Haryana": {
       "Faridabad": {
         "Faridabad": [
-          { "name": "Faridabad", "code": "490001" }
+          { "name": "Faridabad" }
         ]
       },
       "Gurgaon": {
         "Gurgaon": [
-          { "name": "Gurgaon", "code": "500001" }
+          { "name": "Gurgaon" }
         ]
       }
     },
     "Himachal Pradesh": {
       "Shimla": {
         "Shimla": [
-          { "name": "Shimla", "code": "510001" }
+          { "name": "Shimla" }
         ]
       }
     },
     "Jharkhand": {
       "Ranchi": {
         "Ranchi": [
-          { "name": "Ranchi", "code": "530001" }
+          { "name": "Ranchi" }
         ]
       }
     },
     "Karnataka": {
       "Bangalore": {
         "Bangalore": [
-          { "name": "Bangalore", "code": "560001" },
-          { "name": "Whitefield", "code": "560066" }
+          { "name": "Bangalore" },
+          { "name": "Whitefield" }
         ]
       },
       "Mysore": {
         "Mysore": [
-          { "name": "Mysore", "code": "570001" }
+          { "name": "Mysore" }
         ]
       }
     },
     "Kerala": {
       "Thiruvananthapuram": {
         "Thiruvananthapuram": [
-          { "name": "Thiruvananthapuram", "code": "590001" }
+          { "name": "Thiruvananthapuram" }
         ]
       },
       "Kochi": {
         "Kochi": [
-          { "name": "Kochi", "code": "600001" }
+          { "name": "Kochi" }
         ]
       }
     },
     "Madhya Pradesh": {
       "Indore": {
         "Indore": [
-          { "name": "Indore", "code": "610001" }
+          { "name": "Indore" }
         ]
       },
       "Bhopal": {
         "Bhopal": [
-          { "name": "Bhopal", "code": "620001" }
+          { "name": "Bhopal" }
         ]
       }
     },
     "Maharashtra": {
       "Mumbai": {
         "Mumbai": [
-          { "name": "Mumbai", "code": "630001" },
-          { "name": "Andheri", "code": "630002" }
+          { "name": "Mumbai" },
+          { "name": "Andheri" }
         ]
       },
       "Pune": {
         "Pune": [
-          { "name": "Pune", "code": "640001" }
+          { "name": "Pune" }
         ]
       }
     },
     "Manipur": {
       "Imphal": {
         "Imphal": [
-          { "name": "Imphal", "code": "650001" }
+          { "name": "Imphal" }
         ]
       }
     },
     "Meghalaya": {
       "Shillong": {
         "Shillong": [
-          { "name": "Shillong", "code": "660001" }
+          { "name": "Shillong" }
         ]
       }
     },
     "Mizoram": {
       "Aizawl": {
         "Aizawl": [
-          { "name": "Aizawl", "code": "670001" }
+          { "name": "Aizawl" }
         ]
       }
     },
     "Nagaland": {
       "Kohima": {
         "Kohima": [
-          { "name": "Kohima", "code": "680001" }
+          { "name": "Kohima" }
         ]
       }
     },
     "Odisha": {
       "Bhubaneswar": {
         "Bhubaneswar": [
-          { "name": "Bhubaneswar", "code": "690001" }
+          { "name": "Bhubaneswar" }
         ]
       }
     },
     "Punjab": {
       "Amritsar": {
         "Amritsar": [
-          { "name": "Amritsar", "code": "700001" }
+          { "name": "Amritsar" }
         ]
       },
       "Ludhiana": {
         "Ludhiana": [
-          { "name": "Ludhiana", "code": "710001" }
+          { "name": "Ludhiana" }
         ]
       }
     },
     "Rajasthan": {
       "Jaipur": {
         "Jaipur": [
-          { "name": "Jaipur", "code": "720001" }
+          { "name": "Jaipur" }
         ]
       },
       "Jodhpur": {
         "Jodhpur": [
-          { "name": "Jodhpur", "code": "730001" }
+          { "name": "Jodhpur" }
         ]
       }
     },
     "Sikkim": {
       "East Sikkim": {
         "Gangtok": [
-          { "name": "Gangtok", "code": "740001" }
+          { "name": "Gangtok" }
         ]
       }
     },
     "Tamil Nadu": {
       "Chennai": {
         "Chennai": [
-          { "name": "Chennai", "code": "750001" }
+          { "name": "Chennai" }
         ]
       },
       "Coimbatore": {
         "Coimbatore": [
-          { "name": "Coimbatore", "code": "760001" }
+          { "name": "Coimbatore" }
         ]
       }
     },
     "Telangana": {
       "Hyderabad": {
         "Hyderabad": [
-          { "name": "Hyderabad", "code": "770001" }
+          { "name": "Hyderabad" }
         ]
       }
     },
     "Tripura": {
       "Agartala": {
         "Agartala": [
-          { "name": "Agartala", "code": "780001" }
+          { "name": "Agartala" }
         ]
       }
     },
     "Uttar Pradesh": {
       "Lucknow": {
         "Lucknow": [
-          { "name": "Lucknow", "code": "790001" }
+          { "name": "Lucknow" }
         ]
       },
       "Varanasi": {
         "Varanasi": [
-          { "name": "Varanasi", "code": "800001" }
+          { "name": "Varanasi" }
         ]
       }
     },
     "Uttarakhand": {
       "Dehradun": {
         "Dehradun": [
-          { "name": "Dehradun", "code": "810001" }
+          { "name": "Dehradun" }
         ]
       }
     },
     "West Bengal": {
       "Kolkata": {
         "Kolkata": [
-          { "name": "Kolkata", "code": "820001" }
+          { "name": "Kolkata" }
         ]
       },
       "Darjeeling": {
         "Darjeeling": [
-          { "name": "Darjeeling", "code": "830001" }
+          { "name": "Darjeeling" }
         ]
       }
     },
     "Dadra and Nagar Haveli": {
       "Silvassa": {
         "Silvassa": [
-          { "name": "Silvassa", "code": "840001" }
+          { "name": "Silvassa" }
         ]
       }
     },
     "Daman and Diu": {
       "Daman": {
         "Daman": [
-          { "name": "Daman", "code": "850001" }
+          { "name": "Daman" }
         ]
       }
     },
     "Lakshadweep": {
       "Lakshadweep": {
         "Minicoy": [
-          { "name": "Minicoy", "code": "860001" }
+          { "name": "Minicoy" }
         ]
       }
     },
     "Puducherry": {
       "Puducherry": {
         "Puducherry": [
-          { "name": "Puducherry", "code": "870001" }
+          { "name": "Puducherry" }
         ]
       }
     },
     "Delhi": {
       "New Delhi": {
         "New Delhi": [
-          { "name": "New Delhi", "code": "880001" }
+          { "name": "New Delhi" }
         ]
       }
     }
