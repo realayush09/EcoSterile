@@ -313,4 +313,3 @@ export function deepClone(obj) {
 export function mergeObjects(...objects) {
   return Object.assign({}, ...objects);
 }
-

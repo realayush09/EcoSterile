@@ -15,6 +15,11 @@ import { HeaderComponent } from "../components/header.js";
 import { StatusIndicatorComponent } from "../components/status-indicator.js";
 import { PumpLogComponent } from "../components/pump-log.js";
 import { CropCardsComponent } from "../components/crop-cards.js";
+import {
+  getDatabase,
+  ref,
+  get,
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
 // ==========================================
 // Global Application State
@@ -74,11 +79,33 @@ let cropCardsComponent = null;
 // Initialization
 // ==========================================
 async function initializeDashboard() {
-  // Check authentication
+  // Check authentication and profile completion
   authService.onAuthStateChanged(async (user) => {
     if (!user) {
       window.location.href = "../auth/signin.html";
       return;
+    }
+
+    // Check if profile and location are complete
+    try {
+      const db = getDatabase();
+      const profileSnap = await get(ref(db, `users/${user.uid}/profile`));
+      const locationSnap = await get(ref(db, `users/${user.uid}/location`));
+
+      const hasProfile = profileSnap.exists();
+      const hasLocation = locationSnap.exists();
+
+      if (!hasProfile || !hasLocation) {
+        // Profile incomplete, redirect to completion page
+        console.warn(
+          "⚠️ Profile incomplete. Redirecting to complete-profile.html"
+        );
+        window.location.href = "../auth/complete-profile.html";
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking profile completeness:", error);
+      // On error, allow access (safer than blocking)
     }
 
     appState.user = user;

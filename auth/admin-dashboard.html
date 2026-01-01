@@ -419,12 +419,6 @@
                     <button class="export-btn" data-format="csv">Export as CSV</button>
                 </div>
                 <div class="export-card">
-                    <div class="export-icon">📗</div>
-                    <div class="export-format">Excel</div>
-                    <div class="export-desc">Excel workbook (.xlsx)</div>
-                    <button class="export-btn" data-format="xlsx">Export as Excel</button>
-                </div>
-                <div class="export-card">
                     <div class="export-icon">📑</div>
                     <div class="export-format">PDF</div>
                     <div class="export-desc">PDF summary report</div>
@@ -449,9 +443,7 @@
     </div>
 
     <!-- External Libraries (CDN) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
@@ -483,17 +475,9 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // Admin emails whitelist
-        const ADMIN_EMAILS = [
-            "admin@ecosterile.com",
-            "dev@ecosterile.com",
-            "support@ecosterile.com",
-            "ayushmanchoudhury30@gmail.com",
-            "tanmoykanoo30@gmail.com"
-        ];
-
         // Global state
         let currentUser = null;
+        let isAdmin = false;
         let allData = {
             users: {},
             phReadings: {},
@@ -520,16 +504,30 @@
                 return;
             }
 
-            // Verify admin status
-            if (!ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-                await signOut(auth);
-                window.location.href = "admin-login.html";
-                return;
-            }
-
             currentUser = user;
             adminEmailEl.textContent = user.email;
-            await loadAllData();
+
+            // Verify admin status from database
+            try {
+                const adminCheckSnap = await get(ref(db, `admins/${user.uid}`));
+                if (adminCheckSnap.exists() && adminCheckSnap.val() === true) {
+                    isAdmin = true;
+                    await loadAllData();
+                } else {
+                    showStatus("❌ Admin access required. Signing out...", "error");
+                    setTimeout(async () => {
+                        await signOut(auth);
+                        window.location.href = "admin-login.html";
+                    }, 2000);
+                }
+            } catch (error) {
+                showStatus(`❌ Admin verification failed: ${error.message}`, "error");
+                console.error("Admin check error:", error);
+                setTimeout(async () => {
+                    await signOut(auth);
+                    window.location.href = "admin-login.html";
+                }, 2000);
+            }
         });
 
         // Logout
@@ -538,40 +536,67 @@
             window.location.href = "admin-login.html";
         });
 
+        // Initialize export buttons - disabled until data loads
+        exportBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+        });
+
         // Load all data from Firebase
         async function loadAllData() {
             try {
-                showStatus("Loading data...", "info");
+                showStatus("🔄 Loading data...", "info");
 
-                // Load users
+                // Load all users
                 const usersSnap = await get(ref(db, "users"));
                 if (usersSnap.exists()) {
                     allData.users = usersSnap.val();
-                }
 
-                // Load locations
-                const locationsSnap = await get(ref(db, "locations"));
-                if (locationsSnap.exists()) {
-                    allData.locations = locationsSnap.val();
-                }
+                    // Extract location data and readings from users
+                    Object.keys(allData.users).forEach(userId => {
+                        const user = allData.users[userId];
 
-                // Load all pH readings and pump logs from all users
-                Object.keys(allData.users).forEach(userId => {
-                    const user = allData.users[userId];
-                    if (user.phReadings) {
-                        allData.phReadings = { ...allData.phReadings, ...user.phReadings };
-                    }
-                    if (user.pumpLogs) {
-                        allData.pumpLogs = { ...allData.pumpLogs, ...user.pumpLogs };
-                    }
-                });
+                        // Safely extract location data
+                        if (user && user.location) {
+                            allData.locations[userId] = user.location;
+                        }
+
+                        // Extract pH readings
+                        if (user && user.phReadings && typeof user.phReadings === "object") {
+                            allData.phReadings = { ...allData.phReadings, ...user.phReadings };
+                        }
+
+                        // Extract pump logs
+                        if (user && user.pumpLogs && typeof user.pumpLogs === "object") {
+                            allData.pumpLogs = { ...allData.pumpLogs, ...user.pumpLogs };
+                        }
+                    });
+                } else {
+                    console.warn("⚠️ No users found in database");
+                    allData.users = {};
+                }
 
                 updateStats();
                 updatePreview();
+
+                // Enable export buttons after data loads
+                exportBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                    btn.style.cursor = "pointer";
+                });
+
                 showStatus("✅ Data loaded successfully", "success");
             } catch (error) {
-                showStatus("❌ Failed to load data: " + error.message, "error");
                 console.error("Data load error:", error);
+
+                // Check if it's a permission error
+                if (error.code === "PERMISSION_DENIED" || error.message.includes("Permission denied")) {
+                    showStatus("❌ Permission denied: Admin access required to load data", "error");
+                } else {
+                    showStatus("❌ Failed to load data: " + error.message, "error");
+                }
             }
         }
 
@@ -675,6 +700,16 @@
         // Export data function
         async function exportData(format) {
             const filteredData = getFilteredData();
+
+            // Check if data is empty
+            const hasData = Object.values(filteredData).some(section =>
+                section && typeof section === "object" && Object.keys(section).length > 0
+            );
+
+            if (!hasData) {
+                throw new Error("No data to export. Please load data first.");
+            }
+
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
 
             switch (format) {
@@ -684,12 +719,11 @@
                 case "csv":
                     exportCSV(filteredData, timestamp);
                     break;
-                case "xlsx":
-                    await exportXLSX(filteredData, timestamp);
-                    break;
                 case "pdf":
                     await exportPDF(filteredData, timestamp);
                     break;
+                default:
+                    throw new Error(`Unknown export format: ${format}`);
             }
         }
 
@@ -718,127 +752,89 @@
             downloadFile(blob, `ecosterile-export-${timestamp}.csv`);
         }
 
-        // Export as Excel
-        async function exportXLSX(data, timestamp) {
-            const XLSX = window.XLSX;
-            const workbook = XLSX.utils.book_new();
-
-            // Create a sheet for each data type
-            Object.keys(data).forEach(type => {
-                const items = data[type];
-                if (typeof items === "object" && Object.keys(items).length > 0) {
-                    const rows = [];
-                    Object.keys(items).forEach(id => {
-                        rows.push({
-                            ID: id,
-                            ...items[id],
-                            _metadata: JSON.stringify(items[id])
-                        });
-                    });
-
-                    const worksheet = XLSX.utils.json_to_sheet(rows);
-                    XLSX.utils.book_append_sheet(workbook, worksheet, type.substring(0, 31));
-                }
-            });
-
-            // Add summary sheet
-            const summary = [{
-                "Metric": "Export Date",
-                "Value": new Date().toISOString()
-            }, {
-                "Metric": "Total Users",
-                "Value": Object.keys(data.users || {}).length
-            }, {
-                "Metric": "Total pH Readings",
-                "Value": Object.keys(data.phReadings || {}).length
-            }, {
-                "Metric": "Total Pump Logs",
-                "Value": Object.keys(data.pumpLogs || {}).length
-            }, {
-                "Metric": "Total Locations",
-                "Value": Object.keys(data.locations || {}).length
-            }];
-            const summarySheet = XLSX.utils.json_to_sheet(summary);
-            XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
-
-            XLSX.writeFile(workbook, `ecosterile-export-${timestamp}.xlsx`);
-        }
-
         // Export as PDF
         async function exportPDF(data, timestamp) {
-            const jsPDF = window.jspdf.jsPDF;
-            const doc = new jsPDF();
-
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            let yPosition = 20;
-            const margin = 15;
-            const maxWidth = pageWidth - 2 * margin;
-
-            // Title
-            doc.setFontSize(18);
-            doc.setTextColor(16, 185, 129);
-            doc.text("EcoSterile-Pro Data Export Report", margin, yPosition);
-            yPosition += 15;
-
-            // Metadata
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Export Date: ${new Date().toLocaleString()}`, margin, yPosition);
-            yPosition += 8;
-            doc.text(`Admin User: ${currentUser?.email || "Unknown"}`, margin, yPosition);
-            yPosition += 15;
-
-            // Statistics
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text("Database Statistics:", margin, yPosition);
-            yPosition += 10;
-
-            const stats = [
-                [`Total Users: ${Object.keys(data.users || {}).length}`],
-                [`Total pH Readings: ${Object.keys(data.phReadings || {}).length}`],
-                [`Total Pump Logs: ${Object.keys(data.pumpLogs || {}).length}`],
-                [`Total Locations: ${Object.keys(data.locations || {}).length}`]
-            ];
-
-            stats.forEach(stat => {
-                if (yPosition > pageHeight - 20) {
-                    doc.addPage();
-                    yPosition = 20;
+            try {
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    throw new Error("PDF library not loaded. Please refresh the page and try again.");
                 }
+
+                const jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF();
+
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                let yPosition = 20;
+                const margin = 15;
+                const maxWidth = pageWidth - 2 * margin;
+
+                // Title
+                doc.setFontSize(18);
+                doc.setTextColor(16, 185, 129);
+                doc.text("EcoSterile-Pro Data Export Report", margin, yPosition);
+                yPosition += 15;
+
+                // Metadata
                 doc.setFontSize(10);
-                doc.text(stat[0], margin, yPosition);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Export Date: ${new Date().toLocaleString()}`, margin, yPosition);
                 yPosition += 8;
-            });
+                doc.text(`Admin User: ${currentUser?.email || "Unknown"}`, margin, yPosition);
+                yPosition += 15;
 
-            // Sample data
-            yPosition += 5;
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text("Data Summary:", margin, yPosition);
-            yPosition += 10;
+                // Statistics
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text("Database Statistics:", margin, yPosition);
+                yPosition += 10;
 
-            const summaryText = JSON.stringify(data, null, 2).substring(0, 2000);
-            const splitText = doc.splitTextToSize(summaryText, maxWidth - 5);
+                const stats = [
+                    [`Total Users: ${Object.keys(data.users || {}).length}`],
+                    [`Total pH Readings: ${Object.keys(data.phReadings || {}).length}`],
+                    [`Total Pump Logs: ${Object.keys(data.pumpLogs || {}).length}`],
+                    [`Total Locations: ${Object.keys(data.locations || {}).length}`]
+                ];
 
-            splitText.forEach(line => {
-                if (yPosition > pageHeight - 20) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-                doc.setFontSize(8);
-                doc.setFont(undefined, "normal");
-                doc.text(line, margin, yPosition);
+                stats.forEach(stat => {
+                    if (yPosition > pageHeight - 20) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.setFontSize(10);
+                    doc.text(stat[0], margin, yPosition);
+                    yPosition += 8;
+                });
+
+                // Sample data
                 yPosition += 5;
-            });
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text("Data Summary:", margin, yPosition);
+                yPosition += 10;
 
-            // Footer
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+                const summaryText = JSON.stringify(data, null, 2).substring(0, 2000);
+                const splitText = doc.splitTextToSize(summaryText, maxWidth - 5);
 
-            doc.save(`ecosterile-export-${timestamp}.pdf`);
+                splitText.forEach(line => {
+                    if (yPosition > pageHeight - 20) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.setFontSize(8);
+                    doc.setFont(undefined, "normal");
+                    doc.text(line, margin, yPosition);
+                    yPosition += 5;
+                });
+
+                // Footer
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+
+                doc.save(`ecosterile-export-${timestamp}.pdf`);
+            } catch (error) {
+                throw new Error(`PDF export failed: ${error.message}`);
+            }
         }
 
         // Helper functions
@@ -870,6 +866,5 @@
         }
     </script>
 </body>
-
 
 </html>

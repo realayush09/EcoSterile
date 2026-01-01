@@ -175,47 +175,6 @@
             color: var(--primary-color);
         }
 
-        .test-credentials {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            padding: var(--space-4);
-            margin-bottom: var(--space-6);
-            font-size: 0.875rem;
-        }
-
-        .test-credentials-title {
-            font-weight: 600;
-            color: var(--accent-cyan);
-            margin-bottom: var(--space-2);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .test-credentials-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            margin-bottom: var(--space-2);
-            color: var(--text-secondary);
-        }
-
-        .test-credentials-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .copy-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            cursor: pointer;
-            padding: 0;
-            font-size: 0.75rem;
-            opacity: 0.7;
-            transition: opacity var(--transition-fast);
-        }
-
         .copy-btn:hover {
             opacity: 1;
         }
@@ -271,24 +230,6 @@
                 <!-- Alert Messages -->
                 <div id="alertBox"></div>
 
-                <!-- Test Credentials Demo -->
-                <div class="test-credentials">
-                    <div class="test-credentials-title">🧪 Demo Credentials</div>
-                    <div class="test-credentials-item"
-                        style="color: var(--text-tertiary); font-size: 0.8rem; margin-bottom: var(--space-3);">
-                        Create account first or use Google OAuth to get started
-                    </div>
-                    <div class="test-credentials-item">
-                        <span>📧 test@example.com</span>
-                        <button type="button" class="copy-btn"
-                            onclick="copyToClipboard('test@example.com')">copy</button>
-                    </div>
-                    <div class="test-credentials-item">
-                        <span>🔐 Test@12345</span>
-                        <button type="button" class="copy-btn" onclick="copyToClipboard('Test@12345')">copy</button>
-                    </div>
-                </div>
-
                 <!-- Sign In Form -->
                 <form id="signInForm">
                     <div class="form-group">
@@ -334,27 +275,9 @@
 
     <script type="module">
         import { authService } from '../services/firebase.js';
+        import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js';
 
-        // Copy to clipboard utility
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                const alertBox = document.getElementById('alertBox');
-                alertBox.innerHTML = `<div class="alert alert-success">Copied to clipboard!</div>`;
-                setTimeout(() => {
-                    alertBox.innerHTML = '';
-                }, 2000);
-            });
-        }
-
-        // Make copyToClipboard globally available
-        window.copyToClipboard = copyToClipboard;
-
-        const form = document.getElementById('signInForm');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
         const alertBox = document.getElementById('alertBox');
-        const btnText = document.getElementById('btnText');
-        const spinner = document.getElementById('spinner');
         const googleSignIn = document.getElementById('googleSignIn');
 
         // Show Alert
@@ -366,7 +289,36 @@
             }, 5000);
         }
 
+        // Make showAlert globally available for form
+        window.showAlert = showAlert;
+
+        // Check if user profile is complete
+        async function isProfileComplete(uid) {
+            try {
+                const db = getDatabase();
+
+                // Check if profile exists
+                const profileSnap = await get(ref(db, `users/${uid}/profile`));
+                const hasProfile = profileSnap.exists();
+
+                // Check if location exists
+                const locationSnap = await get(ref(db, `users/${uid}/location`));
+                const hasLocation = locationSnap.exists();
+
+                return hasProfile && hasLocation;
+            } catch (error) {
+                console.error('Error checking profile:', error);
+                return false;
+            }
+        }
+
         // Sign In Form Submit
+        const form = document.getElementById('signInForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -398,7 +350,7 @@
             }
         });
 
-        // Google Sign In
+        // Google Sign In - with profile completion check
         googleSignIn.addEventListener('click', async () => {
             googleSignIn.disabled = true;
             googleSignIn.textContent = '⏳ Signing in...';
@@ -406,10 +358,34 @@
             const result = await authService.signInWithGoogle();
 
             if (result.success) {
-                showAlert('Sign in successful! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = '../dashboard/dashboard.html';
-                }, 1500);
+                // Get the current user UID
+                const user = authService.getCurrentUser && authService.getCurrentUser();
+                const uid = user?.uid;
+
+                if (uid) {
+                    // Check if profile is complete
+                    const profileComplete = await isProfileComplete(uid);
+
+                    if (profileComplete) {
+                        // Profile is complete, go to dashboard
+                        showAlert('Sign in successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '../dashboard/dashboard.html';
+                        }, 1500);
+                    } else {
+                        // Profile incomplete, redirect to complete-profile page
+                        showAlert('Please complete your profile...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'complete-profile.html';
+                        }, 1500);
+                    }
+                } else {
+                    // Fallback: redirect to complete-profile (safer approach)
+                    showAlert('Please complete your profile...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'complete-profile.html';
+                    }, 1500);
+                }
             } else {
                 showAlert(result.error || 'Google sign in failed');
                 googleSignIn.disabled = false;
@@ -418,9 +394,16 @@
         });
 
         // Check if already signed in
-        authService.onAuthStateChanged((user) => {
+        authService.onAuthStateChanged(async (user) => {
             if (user) {
-                window.location.href = '../dashboard/dashboard.html';
+                // Check if profile is complete
+                const profileComplete = await isProfileComplete(user.uid);
+
+                if (profileComplete) {
+                    window.location.href = '../dashboard/dashboard.html';
+                } else {
+                    window.location.href = 'complete-profile.html';
+                }
             }
         });
     </script>
