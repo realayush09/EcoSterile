@@ -1,4 +1,5 @@
 import { authService, db } from "../services/firebase.js";
+import { themeService } from "../services/theme-service.js";
 import {
   ref,
   get,
@@ -25,6 +26,10 @@ class ProfileManager {
 
       this.user = user;
       console.log("✅ User authenticated:", user.uid);
+
+      // Initialize theme from database on profile page load
+      console.log("🎨 Initializing theme...");
+      await themeService.initializeTheme(user.uid);
 
       // Initialize header
       this.initHeader();

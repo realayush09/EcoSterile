@@ -383,7 +383,28 @@ export class CropCardsComponent {
       showMoreBtn.addEventListener("click", this.handleShowMoreBound);
     }
 
-    // Crop card selection using event delegation
+    // Recommended crop cards selection using event delegation
+    const recommendedContainer = document.getElementById(
+      "recommendedCardsContainer"
+    );
+    if (recommendedContainer) {
+      recommendedContainer.removeEventListener(
+        "click",
+        this.handleRecommendedClickBound
+      );
+      this.handleRecommendedClickBound = (e) => {
+        const card = e.target.closest(".crop-card");
+        if (card) {
+          this.selectCrop(card.dataset.value);
+        }
+      };
+      recommendedContainer.addEventListener(
+        "click",
+        this.handleRecommendedClickBound
+      );
+    }
+
+    // Crop card selection using event delegation (main container)
     const cardsContainer = document.getElementById("cropCardsContainer");
     if (cardsContainer) {
       cardsContainer.removeEventListener("click", this.handleCardClickBound);
@@ -555,12 +576,32 @@ export class CropCardsComponent {
    * Handle crop selection
    */
   selectCrop(cropValue) {
+    console.log("🌾 Crop card selected, firing event:", cropValue);
+
+    // 🔍 Defensive check: if crops are locked, notify but don't block
+    if (this.isLocked) {
+      console.warn(
+        "🔒 Crop is locked, but event will still fire for notification"
+      );
+      window.dispatchEvent(
+        new CustomEvent("showNotification", {
+          detail: {
+            message: "Crop is locked. Please contact admin to unlock.",
+            type: "warning",
+          },
+        })
+      );
+      // Still allow event to bubble - don't silently fail
+    }
+
     // Dispatch event for parent to handle
+    console.log("📄 Dispatching cropSelected custom event:", cropValue);
     window.dispatchEvent(
       new CustomEvent("cropSelected", {
         detail: { cropValue },
       })
     );
+    console.log("✅ cropSelected event dispatched successfully");
   }
 
   /**

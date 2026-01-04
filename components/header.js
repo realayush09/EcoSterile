@@ -108,6 +108,18 @@ export class HeaderComponent {
   }
 
   /**
+   * Toggle theme between light and dark
+   */
+  toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute("data-theme");
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+    html.setAttribute("data-theme", newTheme);
+    localStorage.setItem("ecoSterile-theme", newTheme);
+  }
+
+  /**
    * Update current time
    */
   updateTime() {

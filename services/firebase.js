@@ -345,8 +345,10 @@ export const phService = {
       };
       // Store in user-scoped path for complete data isolation
       const ref_path = ref(db, `users/${userId}/phReadings`);
-      await push(ref_path, reading);
-      return { success: true };
+      // Create a new push ref and write the reading so we can return the key
+      const newRef = push(ref_path);
+      await set(newRef, reading);
+      return { success: true, id: newRef.key, reading };
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -398,28 +400,107 @@ export const phService = {
    * Listen to real-time pH updates for user
    */
   onReadingsUpdate(userId, callback) {
-    // Listen to user-scoped phReadings
+    console.log(
+      `🔥 Firebase: Setting up real-time listener for user ${userId}/phReadings`
+    );
+
+    // Listen to user-scoped phReadings - last 100 readings
     const ref_path = query(
       ref(db, `users/${userId}/phReadings`),
       orderByChild("timestamp"),
       limitToLast(100)
     );
-    return onValue(ref_path, (snapshot) => {
-      const readings = [];
-      snapshot.forEach((child) => {
-        const data = child.val();
-        console.log("📊 Reading snapshot:", data);
 
-        readings.push({
-          id: child.key,
-          value: data.value,
-          timestamp: data.timestamp,
+    let lastSeenTimestamp = null;
+    let callCount = 0;
+
+    const unsubscribe = onValue(
+      ref_path,
+      (snapshot) => {
+        callCount++;
+        import("./logger.js").then(({ logger }) => {
+          logger.debug(
+            `🔥 Listener callback #${callCount} - Snapshot exists:`,
+            snapshot.exists()
+          );
         });
-      });
+        const readings = [];
 
-      console.log("📊 All readings in callback:", readings.length);
-      callback(readings);
-    });
+        if (!snapshot.exists()) {
+          console.warn("⚠️ No readings in snapshot");
+          callback([]);
+          return;
+        }
+
+        snapshot.forEach((child) => {
+          const data = child.val();
+
+          if (data && typeof data.value === "number" && data.timestamp) {
+            readings.push({
+              id: child.key,
+              value: data.value,
+              timestamp: data.timestamp,
+            });
+          }
+        });
+
+        // Sort by timestamp
+        readings.sort((a, b) => {
+          const aTime =
+            typeof a.timestamp === "number"
+              ? a.timestamp
+              : new Date(a.timestamp).getTime();
+          const bTime =
+            typeof b.timestamp === "number"
+              ? b.timestamp
+              : new Date(b.timestamp).getTime();
+          return aTime - bTime;
+        });
+
+        import("./logger.js").then(({ logger }) => {
+          logger.debug(`🔥 Total valid readings: ${readings.length}`);
+        });
+
+        // Check if there's a NEW reading
+        if (readings.length > 0) {
+          const latestTimestamp = readings[readings.length - 1].timestamp;
+          const latestValue = readings[readings.length - 1].value;
+
+          if (lastSeenTimestamp !== latestTimestamp) {
+            import("./logger.js").then(({ logger }) => {
+              logger.debug(
+                `✨ NEW reading detected! Timestamp: ${latestTimestamp}, Value: ${latestValue}`
+              );
+            });
+            lastSeenTimestamp = latestTimestamp;
+          } else {
+            import("./logger.js").then(({ logger }) => {
+              logger.debug(
+                `ℹ️ Same timestamp as before (${latestTimestamp}) - no new data`
+              );
+            });
+          }
+        }
+
+        // Call the callback with all readings
+        callback(readings);
+      },
+      (error) => {
+        console.error(`🔥 Firebase listener error for ${userId}:`, error);
+        if (
+          error &&
+          error.code &&
+          error.code.toLowerCase().includes("permission")
+        ) {
+          console.error(
+            `🔒 Permission error detected for path users/${userId}/phReadings - check Realtime Database rules.`
+          );
+        }
+      }
+    );
+
+    console.log(`🔥 Listener successfully attached`);
+    return unsubscribe;
   },
 };
 
@@ -541,14 +622,17 @@ export const userService = {
    */
   async saveCropSelection(userId, cropData) {
     try {
+      // saveCropSelection called
       await update(ref(db, `users/${userId}/profile`), {
         currentCrop: cropData.value,
         cropMinPH: cropData.minPH,
         cropMaxPH: cropData.maxPH,
         lastCropChange: new Date().toISOString(),
       });
+      // saveCropSelection completed
       return { success: true };
     } catch (error) {
+      console.error("❌ userService.saveCropSelection error:", error);
       return { success: false, error: error.message };
     }
   },

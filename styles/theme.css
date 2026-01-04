@@ -43,6 +43,10 @@
     --text-secondary: #4b5563;
     --text-tertiary: #9ca3af;
 
+    /* Input & Border Colors (Light Mode) */
+    --input-bg: #f9fafb;
+    --border-color: #e5e7eb;
+
     /* Auth Page Colors (Always Light Mode) */
     --auth-bg-primary: #f9fafb;
     --auth-bg-secondary: #ffffff;
@@ -84,6 +88,51 @@
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   DARK MODE VARIABLES (Database-Driven)
+   Applies to all pages: Dashboard, Settings, Profile
+   ============================================ */
+html[data-theme="dark"],
+body.theme-dark {
+    /* Primary Colors */
+    --primary-color: #3fb950;
+    --primary-dark: #238636;
+    --primary-light: #4fdd9b;
+
+    /* Secondary Colors (Accent) */
+    --accent-cyan: #39c5cf;
+    --accent-teal: #56d4dd;
+
+    /* Status Colors */
+    --success-color: #3fb950;
+    --warning-color: #d29922;
+    --danger-color: #f85149;
+    --info-color: #79c0ff;
+
+    /* Background Colors (Dark Mode) - Professional minimal */
+    --bg-primary: #0d1117;
+    --bg-secondary: #10151b;
+    --bg-tertiary: #161b22;
+    --bg-card: #0d1117;
+    --bg-hover: #161b22;
+
+    /* Text Colors (Dark Mode) */
+    --text-primary: #e6edf3;
+    --text-secondary: #dde3ea;
+    --text-tertiary: #9ba3af;
+
+    /* Input & Border Colors (Dark Mode) */
+    --input-bg: #161b22;
+    --border-color: #30363d;
+
+    /* Shadows - Subtle */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
 * {

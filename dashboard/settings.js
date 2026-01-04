@@ -1,4 +1,5 @@
 import { authService, db } from "../services/firebase.js";
+import { themeService } from "../services/theme-service.js";
 import {
   ref,
   get,
@@ -244,8 +245,18 @@ class SettingsManager {
       this.user = user;
       console.log("✅ User authenticated:", user.uid);
 
+      // Initialize theme from database on settings page load
+      console.log("🎨 Initializing theme...");
+      await themeService.initializeTheme(user.uid);
+
       // Initialize header
       this.initHeader();
+
+      // Subscribe to theme changes (for cross-page sync)
+      themeService.onChange((newTheme) => {
+        console.log("🔄 Settings page: Theme updated to", newTheme);
+        document.getElementById("darkModeToggle").checked = newTheme === "dark";
+      });
 
       // Load settings
       await this.loadSettings();
@@ -342,8 +353,13 @@ class SettingsManager {
 
     document
       .getElementById("darkModeToggle")
-      .addEventListener("change", (e) => {
-        this.updateSetting("theme", e.target.checked ? "dark" : "light");
+      .addEventListener("change", async (e) => {
+        const newTheme = e.target.checked ? "dark" : "light";
+        console.log("🔄 Theme toggle changed to:", newTheme);
+        // Save to database through theme service
+        await themeService.saveThemeToDatabase(newTheme);
+        // Apply immediately
+        themeService.applyTheme(newTheme, false);
       });
 
     document.getElementById("cropSelect").addEventListener("change", (e) => {

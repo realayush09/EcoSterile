@@ -11,12 +11,14 @@ import {
   systemService,
 } from "../services/firebase.js";
 import { weatherService } from "../services/weather.js";
+import { themeService } from "../services/theme-service.js";
 import { HeaderComponent } from "../components/header.js";
 import { StatusIndicatorComponent } from "../components/status-indicator.js";
 import { PumpLogComponent } from "../components/pump-log.js";
 import { CropCardsComponent } from "../components/crop-cards.js";
 import { ChatbotComponent } from "../components/chatbot.js";
 import { CropRecommendationEngine } from "../services/crop-recommendations.js";
+
 import {
   getDatabase,
   ref,
@@ -702,8 +704,8 @@ async function initializeDashboard() {
         appState.user = user;
         await loadUserProfile();
         initializeComponents();
-        startMonitoring();
         setupEventListeners();
+        startMonitoring();
       } catch (e) {
         console.error("❌ Dashboard initialization error:", e.message);
         // Ensure UI is at least partially visible even on error
@@ -827,61 +829,276 @@ async function loadWeather(location) {
 }
 
 // ==========================================
-// Load pH Readings
+// Global Simulation State
+// ==========================================
+const simulationState = {
+  enabled: false,
+  lastRealDataTime: null,
+  interval: null,
+  currentPH: 7.0,
+};
+
+// ==========================================
+// Load pH Readings with Real-Time Listener
 // ==========================================
 async function loadPhReadings() {
-  console.log("Loading pH readings for user:", appState.user.uid);
-  // Fetch more readings to support 30-day filter (assuming ~1 reading per minute = ~43,200 per 30 days)
-  // Limiting to 2000 for performance while ensuring 7d/30d have adequate data
+  console.log("📊 Loading pH readings for user:", appState.user.uid);
+
+  // Fetch initial batch
   const result = await phService.getReadings(appState.user.uid, 2000);
 
   if (result.success) {
     appState.phReadings = result.readings;
-    console.log("pH readings loaded successfully:", appState.phReadings.length);
+    console.log(
+      "✅ pH readings loaded successfully:",
+      appState.phReadings.length
+    );
+    if (appState.phReadings.length > 0) {
+      const latestValue = parseFloat(
+        appState.phReadings[appState.phReadings.length - 1].value
+      );
+      console.log("📈 Latest pH value from batch:", latestValue);
+      simulationState.currentPH = latestValue;
+      simulationState.lastRealDataTime = Date.now();
+      updatePHDisplay(latestValue);
+    }
     updatePHChart();
     updatePHStats();
   } else {
-    console.error("Failed to load pH readings:", result.error);
+    console.error("❌ Failed to load pH readings:", result.error);
+    if (result.error && result.error.includes("Permission denied")) {
+      alert(
+        "⚠️ Permission Denied: You don't have access to pH readings.\n\nCheck Firebase rules or ensure your user has proper permissions."
+      );
+    }
   }
 
-  // Listen for real-time updates
-  phService.onReadingsUpdate(appState.user.uid, (readings) => {
-    appState.phReadings = readings;
-    console.log("pH readings updated in real-time:", readings.length);
+  // IMPORTANT: Set up real-time listener AFTER initial load
+  console.log("🎯 Attaching Firebase real-time listener...");
+  let lastDisplayedTimestamp = null;
 
-    // Update display with latest reading
-    if (readings.length > 0) {
+  // Set initial timestamp from batch load
+  if (appState.phReadings.length > 0) {
+    lastDisplayedTimestamp =
+      appState.phReadings[appState.phReadings.length - 1].timestamp;
+  }
+
+  if (!appState.user || !appState.user.uid) {
+    console.error("❌ Cannot attach listener: user not available");
+    return;
+  }
+
+  const unsubscribe = phService.onReadingsUpdate(
+    appState.user.uid,
+    (readings) => {
+      import("../services/logger.js").then(({ logger }) => {
+        logger.debug(
+          "🔥 FIREBASE LISTENER FIRED - Received readings:",
+          readings.length
+        );
+      });
+
+      if (readings.length === 0) {
+        console.warn("⚠️ Firebase sent empty readings array");
+        return;
+      }
+
+      // Get the absolute latest reading
       const latest = readings[readings.length - 1];
-      updatePHDisplay(parseFloat(latest.value));
-    }
+      const latestValue = parseFloat(latest.value);
+      const latestTimestamp = latest.timestamp;
 
-    // Update chart
-    updatePHChart();
-    updatePHStats();
+      import("../services/logger.js").then(({ logger }) => {
+        logger.debug(
+          `🔥 Latest in snapshot: pH=${latestValue}, timestamp=${latestTimestamp}`
+        );
+      });
+
+      // CRITICAL: Only update if this is a NEW reading (different timestamp)
+      if (latestTimestamp !== lastDisplayedTimestamp) {
+        import("../services/logger.js").then(({ logger }) => {
+          logger.debug(
+            `✨ BRAND NEW reading detected! Was: ${lastDisplayedTimestamp}, Now: ${latestTimestamp}`
+          );
+        });
+        lastDisplayedTimestamp = latestTimestamp;
+
+        // Mark that we got real data
+        simulationState.lastRealDataTime = Date.now();
+        simulationState.currentPH = latestValue;
+        simulationState.enabled = false; // Stop simulation if running
+
+        // Update state with ALL readings
+        appState.phReadings = readings;
+
+        // CRITICAL: Update UI immediately with NEW value
+        import("../services/logger.js").then(({ logger }) => {
+          logger.debug(`📈 Updating display to pH: ${latestValue}`);
+        });
+        updatePHDisplay(latestValue);
+        import("../services/logger.js").then(({ logger }) => {
+          logger.debug("✅ pH display updated on UI");
+        });
+
+        // Update chart and stats
+        updatePHChart();
+        updatePHStats();
+      } else {
+        console.log(
+          `ℹ️ Same timestamp as last display (${latestTimestamp}) - skipping UI update`
+        );
+      }
+    }
+  );
+
+  console.log("✅ Real-time listener attached successfully");
+
+  // Start monitoring for stale data
+  startDataStalenessMonitor();
+}
+
+// ==========================================
+// Monitor for Stale Data & Start Simulation
+// ==========================================
+function startDataStalenessMonitor() {
+  // Check every 10 seconds if we haven't received real data
+  const staleCheckInterval = setInterval(() => {
+    const timeSinceLastData =
+      Date.now() - (simulationState.lastRealDataTime || Date.now());
+    const TEN_SECONDS = 10000;
+
+    if (timeSinceLastData > TEN_SECONDS && !simulationState.enabled) {
+      console.warn(
+        "⚠️ No real pH data for 10 seconds - SWITCHING TO SIMULATION MODE"
+      );
+      simulationState.enabled = true;
+      startSimulationMode();
+    } else if (timeSinceLastData <= TEN_SECONDS && simulationState.enabled) {
+      import("../services/logger.js").then(({ logger }) => {
+        logger.debug("✅ Real data resumed - STOPPING SIMULATION MODE");
+      });
+      simulationState.enabled = false;
+      if (simulationState.interval) {
+        clearInterval(simulationState.interval);
+        simulationState.interval = null;
+      }
+    }
+  }, 10000);
+}
+
+// ==========================================
+// SIMULATION MODE: Generate fake pH when no real data
+// ==========================================
+function startSimulationMode() {
+  if (simulationState.interval) return; // Already running
+
+  import("../services/logger.js").then(({ logger }) => {
+    logger.debug("🎬 SIMULATED pH MODE ACTIVE - Writing to DB");
   });
+
+  simulationState.interval = setInterval(async () => {
+    // Realistic pH drift: ±0.05 to ±0.15
+    const drift = (Math.random() - 0.5) * 0.3;
+    let newPH = simulationState.currentPH + drift;
+
+    // Keep within realistic range: 6.2 - 7.8
+    newPH = Math.max(6.2, Math.min(7.8, newPH));
+
+    simulationState.currentPH = newPH;
+
+    import("../services/logger.js").then(({ logger }) => {
+      logger.debug("🎬 [SIM] pH:", newPH.toFixed(2));
+    });
+
+    // IMPORTANT: Write to Firebase (not just local state)
+    try {
+      const result = await addPHReading(newPH);
+      if (!result || !result.success) {
+        console.warn("⚠️ Simulated pH write failed:", result?.error);
+      }
+    } catch (e) {
+      console.error("Simulation write error:", e);
+    }
+  }, 2000); // Every 2 seconds
+
+  console.log(
+    "🎬 Simulation started - writing pH values to DB every 2 seconds"
+  );
+}
+
+// ==========================================
+// Stop Simulation
+// ==========================================
+function stopSimulationMode() {
+  if (simulationState.interval) {
+    clearInterval(simulationState.interval);
+    simulationState.interval = null;
+    simulationState.enabled = false;
+    console.log("⏹️ Simulation stopped");
+  }
 }
 
 // ==========================================
 // Load Pump Logs
 // ==========================================
 async function loadPumpLogs() {
-  console.log("Loading pump logs for user:", appState.user.uid);
-  const result = await pumpService.getLogs(appState.user.uid, 100);
+  try {
+    console.log("Loading pump logs for user:", appState.user?.uid);
 
-  if (result.success) {
-    appState.pumpLogs = result.logs;
-    console.log("Pump logs loaded successfully:", appState.pumpLogs.length);
-    pumpLogComponent.render(appState.pumpLogs);
-  } else {
-    console.error("Failed to load pump logs:", result.error);
+    if (!appState.user || !appState.user.uid) {
+      console.warn("Skipping pump log load: no authenticated user yet");
+      return;
+    }
+
+    const result = await pumpService.getLogs(appState.user.uid, 100);
+
+    if (result && result.success) {
+      appState.pumpLogs = result.logs || [];
+      console.log("Pump logs loaded:", appState.pumpLogs.length);
+      if (pumpLogComponent && typeof pumpLogComponent.render === "function") {
+        pumpLogComponent.render(appState.pumpLogs);
+      }
+    } else {
+      console.error("Failed to load pump logs:", result?.error);
+    }
+
+    // Attach lightweight real-time listener to keep UI in sync
+    try {
+      let listenerCallCount = 0;
+      pumpService.onLogsUpdate(appState.user.uid, (logs) => {
+        listenerCallCount++;
+        console.log(
+          `🔥 Pump listener fired (#${listenerCallCount}):`,
+          logs?.length || 0,
+          "logs"
+        );
+
+        appState.pumpLogs = logs || [];
+        console.log(
+          "✅ Pump logs updated in real-time:",
+          appState.pumpLogs.length
+        );
+
+        // Debug: show latest log
+        if (appState.pumpLogs.length > 0) {
+          const latest = appState.pumpLogs[appState.pumpLogs.length - 1];
+          console.log(
+            `   Latest: ${latest.type} @ ${new Date(
+              latest.timestamp
+            ).toLocaleTimeString()}`
+          );
+        }
+
+        if (pumpLogComponent && typeof pumpLogComponent.render === "function") {
+          pumpLogComponent.render(appState.pumpLogs);
+        }
+      });
+    } catch (e) {
+      console.warn("pumpService.onLogsUpdate unavailable or threw:", e);
+    }
+  } catch (e) {
+    console.error("Error in loadPumpLogs:", e);
   }
-
-  // Listen for real-time updates
-  pumpService.onLogsUpdate(appState.user.uid, (logs) => {
-    appState.pumpLogs = logs;
-    console.log("Pump logs updated in real-time:", logs.length);
-    pumpLogComponent.render(appState.pumpLogs);
-  });
 }
 
 // ==========================================
@@ -910,7 +1127,11 @@ function updatePHDisplay(pH) {
   // Update indicator position
   const percentage = (pH / 14) * 100;
   phIndicator.style.left = percentage + "%";
+
+  // ✅ AUTO-ACTIVATE PUMP if pH is out of range
+  checkAndActivatePump(pH);
 }
+// NOTE: removed direct chart mutation helper to keep a single chart update path
 
 // ==========================================
 // Update Optimal pH Display
@@ -1023,108 +1244,42 @@ function initializeComponents() {
 
 // pH Chart Initialization
 function initializePHChart() {
-  const canvasElement = document.getElementById("phChart");
-  console.log("🎯 Initializing pH Chart...", canvasElement);
+  const ctx = document.getElementById("phChart").getContext("2d");
 
-  if (!canvasElement) {
-    console.error("❌ phChart canvas element not found!");
-    return;
-  }
-
-  if (typeof Chart === "undefined") {
-    console.error(
-      '❌ Chart.js not loaded - include <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>'
-    );
-    return;
-  }
-
-  const ctx = canvasElement.getContext("2d");
-  console.log("✅ Canvas context obtained:", ctx);
-
-  // Chart state for interactive features
-  appState.chartState = {
-    isDragging: false,
-    startX: 0,
-    scrollLeft: 0,
-    zoomLevel: 1.0,
-    minZoom: 0.5,
-    maxZoom: 4.0,
-  };
-
-  // If there is an existing instance, destroy it cleanly
-  if (appState.chart) {
-    try {
-      appState.chart.destroy();
-    } catch (e) {
-      // ignore
-    }
-    appState.chart = null;
-  }
+  // Get dark mode config from theme service
+  const chartConfig = themeService.getChartConfig();
 
   appState.chart = new Chart(ctx, {
     type: "line",
     data: {
-      labels: [], // intentionally empty - x comes from data.x
+      labels: [],
       datasets: [
         {
           label: "pH Level",
-          data: [], // will be {x, y}
-          borderColor: "var(--primary-color)",
-          backgroundColor: "rgba(16, 185, 129, 0.08)",
-          borderWidth: 2,
-          tension: 0.25,
+          data: [],
+          borderColor: chartConfig.colors.line,
+          backgroundColor: chartConfig.colors.area,
+          tension: 0.4,
           fill: true,
-          pointRadius: 0, // hide static dots
-          pointHoverRadius: 5,
-          pointBackgroundColor: "var(--primary-color)",
-          pointBorderColor: "white",
-          pointBorderWidth: 1,
-          spanGaps: false, // don't connect missing points
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: chartConfig.colors.line,
+          pointBorderColor: chartConfig.colors.line,
+          pointBorderWidth: 2,
+          pointHoverRadius: 6,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
-      interaction: {
-        mode: "nearest",
-        intersect: false,
-      },
       plugins: {
         legend: {
           display: true,
           labels: {
-            color: "var(--text-secondary)",
+            color: chartConfig.colors.text,
             font: { size: 12 },
-            padding: 10,
-          },
-        },
-        tooltip: {
-          enabled: true,
-          backgroundColor: "rgba(15, 23, 42, 0.95)",
-          titleColor: "white",
-          bodyColor: "var(--text-secondary)",
-          borderColor: "var(--primary-color)",
-          borderWidth: 1,
-          padding: 10,
-          callbacks: {
-            title: function (ctx) {
-              if (!ctx.length) return "";
-              const xVal = ctx[0].raw.x || 0; // seconds relative to now
-              const now = Date.now();
-              const timestamp = now + xVal * 1000;
-              const date = new Date(timestamp);
-              const hours = date.getHours();
-              const mins = String(date.getMinutes()).padStart(2, "0");
-              const ampm = hours >= 12 ? "PM" : "AM";
-              const displayHours = hours % 12 || 12;
-              return `${String(displayHours).padStart(2, "0")}:${mins} ${ampm}`;
-            },
-            label: function (ctx) {
-              const y = ctx.raw.y;
-              return y !== null ? `pH: ${parseFloat(y).toFixed(2)}` : "No data";
-            },
+            usePointStyle: true,
           },
         },
       },
@@ -1133,327 +1288,102 @@ function initializePHChart() {
           min: 0,
           max: 14,
           ticks: {
-            color: "var(--text-tertiary)",
             stepSize: 1,
-            font: { size: 11 },
+            color: chartConfig.colors.text,
           },
           grid: {
-            color: "rgba(15, 23, 42, 0.08)",
-            drawBorder: false,
+            color: chartConfig.colors.grid,
+          },
+          title: {
+            display: true,
+            text: "pH Level",
+            color: chartConfig.colors.text,
           },
         },
         x: {
-          type: "linear",
-          position: "bottom",
-          min: -86400,
-          max: 0,
           ticks: {
-            color: "var(--text-tertiary)",
-            font: { size: 11 },
-            stepSize: 120, // ~2 minutes
-            callback: function (value) {
-              // Check if labels should be shown (controlled by appState.showChartLabels)
-              if (appState.dataIsContinuous === false) {
-                // Discontinuous data: hide all labels
-                return "";
-              }
-
-              const now = Date.now();
-              const timestamp = now + value * 1000;
-              const date = new Date(timestamp);
-
-              // Show label every 2 minutes for continuous data
-              if (value % 120 === 0) {
-                const hours = date.getHours();
-                const mins = String(date.getMinutes()).padStart(2, "0");
-                const ampm = hours >= 12 ? "PM" : "AM";
-                const displayHours = hours % 12 || 12;
-                return `${String(displayHours).padStart(
-                  2,
-                  "0"
-                )}:${mins} ${ampm}`;
-              }
-              return "";
-            },
+            color: chartConfig.colors.text,
           },
           grid: {
-            color: "rgba(15, 23, 42, 0.12)",
-            drawBorder: false,
-            lineWidth: 1,
+            color: chartConfig.colors.grid,
+          },
+          title: {
+            display: true,
+            text: "Time",
+            color: chartConfig.colors.text,
           },
         },
       },
     },
   });
-
-  console.log("✅ Chart instance created");
-
-  // Setup interactive features (drag/zoom)
-  setupChartInteractivity();
 }
 
-// Chart Interactivity (wheel zoom only - auto-follow NOW)
-function setupChartInteractivity() {
-  const container = document.getElementById("phChartWrapper");
-  const canvas = document.getElementById("phChart");
-  if (!container || !canvas || !appState.chart) return;
-
-  container.title =
-    "Zoom in/out using the mouse wheel or pinching. Graph auto-follows live data.";
-
-  // Wheel zoom only
-  const wheelHandler = (e) => {
-    if (!appState.chart) return;
-    e.preventDefault();
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    appState.chartState.zoomLevel = Math.max(
-      appState.chartState.minZoom,
-      Math.min(
-        appState.chartState.maxZoom,
-        appState.chartState.zoomLevel * zoomFactor
-      )
-    );
-    updateChartZoom();
-  };
-  container.removeEventListener("wheel", wheelHandler);
-  container.addEventListener("wheel", wheelHandler, { passive: false });
-
-  // Pinch-to-zoom only (no pan)
-  let lastDistance = 0;
-  container.addEventListener(
-    "touchmove",
-    (e) => {
-      if (e.touches.length !== 2) return;
-      e.preventDefault();
-      const d = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      if (lastDistance) {
-        const zoomDir = d > lastDistance ? 1.05 : 0.95;
-        appState.chartState.zoomLevel = Math.max(
-          appState.chartState.minZoom,
-          Math.min(
-            appState.chartState.maxZoom,
-            appState.chartState.zoomLevel * zoomDir
-          )
-        );
-        updateChartZoom();
-      }
-      lastDistance = d;
-    },
-    { passive: false }
-  );
-  container.addEventListener("touchend", () => {
-    lastDistance = 0;
-  });
-}
-
-// Update chart visible range according to zoom
-function updateChartZoom() {
+// ==========================================
+// Update pH Chart
+// ==========================================
+function updatePHChart(timeRange = "24h") {
   if (!appState.chart) return;
 
-  // Get the actual window size from axis config (set by updatePHChart)
-  const currentMax = appState.chart.options.scales.x.max || 0;
-  const currentMinStatic = appState.chart.options.scales.x.min || -86400;
-  const windowSize = Math.abs(currentMinStatic); // Total window in seconds
+  const now = new Date();
+  let cutoffTime;
 
-  // Calculate visible range based on zoom level
-  const visibleSeconds = Math.max(
-    300,
-    windowSize / appState.chartState.zoomLevel
-  ); // Min 5 min
-  const newMin = Math.max(currentMinStatic, -visibleSeconds);
-  appState.chart.update("none");
-}
-
-// Update pH Chart - Real-time Industrial Telemetry with Dynamic Time Window
-// Timeline anchored to NOW (x=0), continuous line with forward-fill
-// Window size adapts to actual data availability (min of data span or 24 hours)
-function updatePHChart() {
-  if (!appState.chart) {
-    console.warn("⚠️ appState.chart not initialized yet");
-    return;
+  switch (timeRange) {
+    case "24h":
+      cutoffTime = new Date(now - 24 * 60 * 60 * 1000);
+      break;
+    case "7d":
+      cutoffTime = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case "30d":
+      cutoffTime = new Date(now - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      cutoffTime = new Date(now - 24 * 60 * 60 * 1000);
   }
 
-  if (!appState.phReadings || appState.phReadings.length === 0) {
-    appState.chart.data.datasets[0].data = [];
-    appState.chart.options.scales.x.min = -300; // 5 minutes minimum
-    appState.chart.options.scales.x.max = 0;
-    appState.chart.update("none");
-    return;
-  }
+  let filteredReadings = appState.phReadings
+    .map((reading, index) => ({
+      time: new Date(
+        typeof reading.timestamp === "number"
+          ? reading.timestamp
+          : reading.timestamp
+      ),
+      value: reading.value,
+    }))
+    .filter((item) => item.time > cutoffTime);
 
-  // Get current time
-  const now = Date.now();
-  const maxHistorySeconds = 24 * 60 * 60; // 24 hours in seconds
-
-  // Find actual data span
-  const firstReadingTime =
-    typeof appState.phReadings[0].timestamp === "number"
-      ? appState.phReadings[0].timestamp
-      : new Date(appState.phReadings[0].timestamp).getTime();
-
-  // Calculate how much data we actually have
-  const dataSpanSeconds = Math.round((now - firstReadingTime) / 1000);
-
-  // Dynamic window: use minimum of actual data span or 24 hours
-  const visibleWindowSeconds = Math.min(dataSpanSeconds, maxHistorySeconds);
-  const windowStartTime = now - visibleWindowSeconds * 1000;
-
-  // Filter to the dynamic window
-  const filtered = appState.phReadings.filter((r) => {
-    const ts =
-      typeof r.timestamp === "number"
-        ? r.timestamp
-        : new Date(r.timestamp).getTime();
-    return ts >= windowStartTime && ts <= now;
+  import("../services/logger.js").then(({ logger }) => {
+    logger.debug(
+      `⏱ updatePHChart: filteredReadings=${filteredReadings.length}`
+    );
   });
-
-  if (filtered.length === 0) {
-    appState.chart.data.datasets[0].data = [];
-    appState.chart.options.scales.x.min = -visibleWindowSeconds;
-    appState.chart.options.scales.x.max = 0;
-    appState.chart.update("none");
-    return;
-  }
-
-  // Convert to industrial telemetry format:
-  // x = seconds relative to NOW (negative for past, 0 for now)
-  const points = filtered.map((r) => {
-    const ts =
-      typeof r.timestamp === "number"
-        ? r.timestamp
-        : new Date(r.timestamp).getTime();
-    return {
-      x: Math.round((ts - now) / 1000),
-      y: parseFloat(r.value),
-      ts: ts,
-    };
-  });
-
-  // Sort by timestamp to ensure chronological order
-  points.sort((a, b) => a.ts - b.ts);
-
-  // Build timeline with 5-second intervals
-  // Use forward-fill (carry forward last known value) to eliminate gaps
-  const startSeconds = Math.ceil((windowStartTime - now) / 1000);
-  const timelinePoints = [];
-  let lastKnownValue = null;
-
-  for (let x = startSeconds; x <= 0; x += 5) {
-    const found = points.find((p) => Math.abs(p.x - x) < 2.5);
-
-    if (found) {
-      lastKnownValue = found.y;
-      timelinePoints.push({ x, y: found.y });
-    } else if (lastKnownValue !== null) {
-      // Forward-fill: carry forward last known value (continuous line)
-      timelinePoints.push({ x, y: lastKnownValue });
-    } else {
-      // No data yet for this time
-      timelinePoints.push({ x, y: null });
-    }
-  }
-
-  // Ensure latest point is at x=0 (NOW)
-  if (
-    timelinePoints.length > 0 &&
-    timelinePoints[timelinePoints.length - 1].x !== 0
-  ) {
-    timelinePoints.push({
-      x: 0,
-      y: lastKnownValue !== null ? lastKnownValue : points[points.length - 1].y,
+  if (filteredReadings.length > 0) {
+    const last = filteredReadings[filteredReadings.length - 1];
+    import("../services/logger.js").then(({ logger }) => {
+      logger.debug(
+        `⏱ updatePHChart: last value=${
+          last.value
+        } time=${last.time.toLocaleTimeString()}`
+      );
     });
   }
 
-  // Update dataset
-  appState.chart.data.labels = [];
-  appState.chart.data.datasets[0].data = timelinePoints;
-
-  // X-axis uses dynamic window: spans from first data to NOW
-  appState.chart.options.scales.x.min = -visibleWindowSeconds;
-  appState.chart.options.scales.x.max = 0;
-
-  // Update chart without animation
-  appState.chart.update("none");
-
-  // Apply zoom logic (respects dynamic window, keeps x.max = 0)
-  updateChartZoom();
-
-  // Auto-scroll to latest
-  setTimeout(autoScrollToLatest, 50);
-
-  // Update range label
-  if (filtered.length > 0) {
-    const values = filtered.map((r) => parseFloat(r.value));
-    const minPH = Math.min(...values);
-    const maxPH = Math.max(...values);
-    const phRangeEl = document.getElementById("phRange");
-    if (phRangeEl) {
-      phRangeEl.textContent = `${minPH.toFixed(1)} - ${maxPH.toFixed(1)}`;
-    }
-
-    // Detect data continuity: check gaps between consecutive readings
-    // Gap ≤ 2 minutes (120 seconds) = continuous
-    const TWO_MINUTES = 120000; // milliseconds
-    let isContinuous = true;
-
-    for (let i = 1; i < filtered.length; i++) {
-      const prevTs =
-        typeof filtered[i - 1].timestamp === "number"
-          ? filtered[i - 1].timestamp
-          : new Date(filtered[i - 1].timestamp).getTime();
-      const currTs =
-        typeof filtered[i].timestamp === "number"
-          ? filtered[i].timestamp
-          : new Date(filtered[i].timestamp).getTime();
-      const gap = currTs - prevTs;
-
-      if (gap > TWO_MINUTES) {
-        isContinuous = false;
-        break;
-      }
-    }
-
-    appState.dataIsContinuous = isContinuous;
-
-    // Store last reading time for UI display
-    const lastTs =
-      typeof filtered[filtered.length - 1].timestamp === "number"
-        ? filtered[filtered.length - 1].timestamp
-        : new Date(filtered[filtered.length - 1].timestamp).getTime();
-    appState.lastReadingTime = lastTs;
-
-    // Update "Last reading" UI if discontinuous
-    const lastReadingEl = document.getElementById("lastReadingTime");
-    if (lastReadingEl) {
-      if (!isContinuous) {
-        const lastDate = new Date(lastTs);
-        const day = String(lastDate.getDate()).padStart(2, "0");
-        const month = lastDate.toLocaleDateString("en-US", { month: "short" });
-        const hours = lastDate.getHours();
-        const mins = String(lastDate.getMinutes()).padStart(2, "0");
-        const ampm = hours >= 12 ? "PM" : "AM";
-        const displayHours = hours % 12 || 12;
-        lastReadingEl.textContent = `Last reading: ${day} ${month}, ${String(
-          displayHours
-        ).padStart(2, "0")}:${mins} ${ampm}`;
-        lastReadingEl.style.display = "block";
-      } else {
-        lastReadingEl.style.display = "none";
-      }
-    }
+  // After 50 points, only show the last 50 and auto-scroll
+  const MAX_VISIBLE_POINTS = 50;
+  if (filteredReadings.length > MAX_VISIBLE_POINTS) {
+    filteredReadings = filteredReadings.slice(-MAX_VISIBLE_POINTS);
   }
-}
 
-// Auto-scroll to latest data inside wrapper (keeps UI synced)
-function autoScrollToLatest() {
-  const container = document.getElementById("phChartWrapper");
-  if (!container) return;
-  requestAnimationFrame(() => {
-    container.scrollLeft = container.scrollWidth - container.clientWidth;
-  });
+  appState.chart.data.labels = filteredReadings.map((item) =>
+    item.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
+  appState.chart.data.datasets[0].data = filteredReadings.map(
+    (item) => item.value
+  );
+  appState.chart.update();
+
+  // Update the pH Range label text to reflect current filter
+  updatePHRangeLabel(timeRange, filteredReadings);
 }
 
 // ================= REPLACE END =================
@@ -1504,45 +1434,127 @@ function updatePHStats() {
 }
 
 // ==========================================
-// Start Monitoring (Simulation)
+// MANUAL: Force pH Data Refresh (for debugging)
 // ==========================================
-function startMonitoring() {
-  // Simulate pH readings
-  setInterval(() => {
-    // Get the latest pH value from the state's current pH display
-    // instead of trying to guess from old readings
-    const phValueElement = document.getElementById("phValue");
-    let currentPH = phValueElement
-      ? parseFloat(phValueElement.textContent)
-      : 7.0;
+async function forcePhRefresh() {
+  console.log("\n🔄 === MANUAL pH REFRESH TRIGGERED ===");
+  console.log(`Fetching latest 50 readings for user: ${appState.user.uid}`);
 
-    // Ensure we have a valid number
-    if (isNaN(currentPH)) {
-      currentPH = 7.0;
-    }
+  const result = await phService.getReadings(appState.user.uid, 50);
 
-    const change = (Math.random() - 0.5) * 0.2;
-    currentPH = Math.max(4, Math.min(10, currentPH + change));
+  if (result.success && result.readings.length > 0) {
+    // Sort by timestamp
+    const sorted = result.readings.sort((a, b) => {
+      const aTime =
+        typeof a.timestamp === "number"
+          ? a.timestamp
+          : new Date(a.timestamp).getTime();
+      const bTime =
+        typeof b.timestamp === "number"
+          ? b.timestamp
+          : new Date(b.timestamp).getTime();
+      return aTime - bTime;
+    });
 
-    // Add pH reading
-    addPHReading(currentPH);
+    const latest = sorted[sorted.length - 1];
+    const latestValue = parseFloat(latest.value);
+    const latestTime = new Date(latest.timestamp).toLocaleTimeString();
 
-    // Check if pump should activate
-    checkAndActivatePump(currentPH);
-  }, 5000);
+    console.log(`📊 Latest from Firebase: pH=${latestValue} @ ${latestTime}`);
+    console.log(`✅ Total readings fetched: ${sorted.length}`);
+
+    // Force UI update
+    simulationState.currentPH = latestValue;
+    simulationState.lastRealDataTime = Date.now();
+    updatePHDisplay(latestValue);
+
+    console.log(`✅ UI updated to pH: ${latestValue}\n`);
+    return { success: true, latest: latestValue, time: latestTime };
+  } else {
+    console.error(`❌ Failed to fetch readings: ${result.error}\n`);
+    return { success: false, error: result.error };
+  }
 }
+
+// Expose for console debugging
+window.forcePhRefresh = forcePhRefresh;
+// NOTE: Removed always-on background writer that pushed synthetic readings to Firebase.
+// Simulation is managed centrally by `startSimulationMode()` and writes are local-only.
 
 // ==========================================
 // Add pH Reading
 // ==========================================
 async function addPHReading(pH) {
-  const result = await phService.addReading(
-    appState.user.uid,
-    parseFloat(pH.toFixed(2))
-  );
+  import("../services/logger.js").then(({ logger }) => {
+    logger.debug(
+      `📝 Writing pH ${pH} to Firebase at ${new Date().toLocaleTimeString()}`
+    );
+  });
+  // Guard: ensure we have a logged-in user
+  if (!appState.user || !appState.user.uid) {
+    console.error("❌ Cannot write pH: user not authenticated or uid missing");
+    showNotification("Cannot write pH: not authenticated", "error");
+    return { success: false, error: "no-user" };
+  }
 
-  if (!result.success) {
-    console.error("Failed to add pH reading:", result.error);
+  try {
+    const payload = parseFloat(pH.toFixed(2));
+    import("../services/logger.js").then(({ logger }) => {
+      logger.debug("→ phService.addReading payload:", {
+        uid: appState.user.uid,
+        value: payload,
+      });
+    });
+
+    const result = await phService.addReading(appState.user.uid, payload);
+
+    import("../services/logger.js").then(({ logger }) => {
+      logger.debug("← phService.addReading result:", result);
+    });
+
+    if (result && result.success) {
+      import("../services/logger.js").then(({ logger }) => {
+        logger.debug(`✅ pH ${pH} successfully written to Firebase`);
+      });
+
+      // Optimistic local update: push reading into appState before listener round-trip
+      try {
+        const reading = result.reading || {
+          value: payload,
+          timestamp: Date.now(),
+        };
+        const id = result.id || `local-${Date.now()}`;
+
+        appState.phReadings.push({
+          id,
+          value: reading.value,
+          timestamp: reading.timestamp,
+        });
+        // Keep readings sorted
+        appState.phReadings.sort((a, b) => a.timestamp - b.timestamp);
+
+        // Update display and chart via single code path
+        simulationState.currentPH = reading.value;
+        updatePHDisplay(reading.value);
+        updatePHChart();
+        updatePHStats();
+      } catch (e) {
+        console.error("Error applying optimistic pH update:", e);
+      }
+
+      return { success: true };
+    } else {
+      console.error(
+        "❌ Failed to add pH reading - service returned failure:",
+        result
+      );
+      showNotification("Failed to write pH (check console).", "error");
+      return { success: false, error: result?.error || "unknown" };
+    }
+  } catch (err) {
+    console.error("❌ phService.addReading threw error:", err);
+    showNotification("Error writing pH: check console/network.", "error");
+    return { success: false, error: err?.message || String(err) };
   }
 }
 
@@ -1558,16 +1570,70 @@ async function logPumpActivity(pumpType, concentration) {
     chemical = "Fulvic + Citric acid";
   }
 
-  // Log using pump service
-  const result = await pumpService.logActivity(
-    appState.user.uid,
-    pumpType,
-    chemical,
-    concentration
-  );
+  // Guard: ensure we have a logged-in user
+  if (!appState.user || !appState.user.uid) {
+    console.error(
+      "❌ Cannot log pump activity: user not authenticated or uid missing"
+    );
+    showNotification("Cannot log pump activity: not authenticated", "error");
+    return { success: false, error: "no-user" };
+  }
 
-  if (!result.success) {
-    console.error("Failed to log pump activity:", result.error);
+  try {
+    console.log("→ pumpService.logActivity payload:", {
+      uid: appState.user.uid,
+      type: pumpType,
+      chemical,
+      concentration,
+    });
+
+    const result = await pumpService.logActivity(
+      appState.user.uid,
+      pumpType,
+      chemical,
+      concentration
+    );
+
+    console.log("← pumpService.logActivity result:", result);
+
+    if (!result || !result.success) {
+      console.error("Failed to log pump activity:", result);
+      showNotification("Failed to log pump activity (check console).", "error");
+      return { success: false, error: result?.error || "unknown" };
+    }
+
+    // Optimistic local update: append returned log or construct one
+    try {
+      const entry = result.log ||
+        result.entry || {
+          id: result.id || `local-log-${Date.now()}`,
+          type: pumpType,
+          chemical,
+          concentration,
+          timestamp: Date.now(),
+        };
+
+      appState.pumpLogs = appState.pumpLogs || [];
+      appState.pumpLogs.push(entry);
+      appState.pumpLogs.sort(
+        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+      );
+
+      if (pumpLogComponent && typeof pumpLogComponent.render === "function") {
+        pumpLogComponent.render(appState.pumpLogs);
+      }
+    } catch (e) {
+      console.warn("Optimistic pump log update failed:", e);
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("❌ pumpService.logActivity threw error:", err);
+    showNotification(
+      "Error logging pump activity: check console/network.",
+      "error"
+    );
+    return { success: false, error: err?.message || String(err) };
   }
 }
 
@@ -1666,8 +1732,10 @@ async function connectArduino() {
             if (obj.pH !== undefined) {
               const pH = parseFloat(obj.pH);
               if (!isNaN(pH)) {
+                console.log(
+                  `🔌 Arduino sent pH: ${pH} (${new Date().toLocaleTimeString()})`
+                );
                 addPHReading(pH);
-                console.log("🔌 Arduino pH reading:", pH);
               }
             }
 
@@ -1756,6 +1824,28 @@ function updateArduinoStatus(isConnected) {
 // ==========================================
 function setupEventListeners() {
   try {
+    // Theme change listener - update chart colors on theme toggle
+    themeService.onChange((newTheme) => {
+      console.log("🎨 Dashboard: Theme changed to", newTheme);
+
+      // Destroy and recreate chart with new colors
+      if (appState.chart) {
+        appState.chart.destroy();
+        console.log("📊 Chart destroyed for theme update");
+      }
+
+      // Recreate chart with new theme colors
+      setTimeout(() => {
+        initializePHChart();
+        updatePHChart(appState.currentTimeRange);
+        console.log("📊 Chart recreated with new theme colors");
+      }, 100);
+    });
+  } catch (e) {
+    console.error("❌ Theme change listener setup error:", e.message);
+  }
+
+  try {
     // Arduino Connect Button
     const connectBtn = document.getElementById("connectArduinoBtn");
     if (connectBtn) {
@@ -1793,12 +1883,32 @@ function setupEventListeners() {
   }
 
   try {
-    // Crop selection event
+    // 🔔 Show notification event - for components to display notifications
+    window.addEventListener("showNotification", (e) => {
+      const message = e.detail.message || "Notification";
+      const type = e.detail.type || "info";
+      console.log("🔔 Notification event received:", type, message);
+      showNotification(message, type);
+    });
+  } catch (e) {
+    console.error("❌ Notification event setup error:", e.message);
+  }
+
+  try {
+    // 🌾 Crop selection event - ATTACHED AFTER COMPONENTS FULLY LOADED
+    // This ensures cropCardsComponent and other dependencies are ready
     window.addEventListener("cropSelected", async (e) => {
       const cropValue = e.detail.cropValue;
+      console.log("🌾 Crop selected event received:", cropValue);
+
       const selectedCrop = CROPS_DATABASE.find((c) => c.value === cropValue);
 
-      if (!selectedCrop) return;
+      if (!selectedCrop) {
+        console.warn("⚠️ Crop not found in database:", cropValue);
+        return;
+      }
+
+      console.log("🌾 Found crop in database:", selectedCrop.label);
 
       // Show confirmation modal
       const confirmed = await cropCardsComponent.showConfirmationModal(
@@ -1806,6 +1916,8 @@ function setupEventListeners() {
       );
 
       if (confirmed) {
+        console.log("✅ User confirmed crop change:", selectedCrop.label);
+
         // Update crop in database
         const result = await userService.saveCropSelection(appState.user.uid, {
           value: selectedCrop.value,
@@ -1814,16 +1926,27 @@ function setupEventListeners() {
         });
 
         if (result.success) {
+          console.log(
+            "✅ Crop saved successfully to Firebase:",
+            selectedCrop.value
+          );
           appState.currentCrop = selectedCrop;
           appState.optimalPHMin = selectedCrop.minPH;
           appState.optimalPHMax = selectedCrop.maxPH;
 
+          console.log("✅ Updated appState.currentCrop and pH range");
           updateOptimalPHDisplay();
           cropCardsComponent.updateCurrentCrop(selectedCrop);
+          console.log("✅ Updated UI to highlight selected crop");
 
           // Show success message
           showNotification(`Crop changed to ${selectedCrop.label}`, "success");
+        } else {
+          console.error("❌ Failed to save crop:", result.error);
+          showNotification(`Failed to change crop: ${result.error}`, "error");
         }
+      } else {
+        console.log("⚠️ User cancelled crop change");
       }
     });
   } catch (e) {
@@ -1856,8 +1979,251 @@ function showNotification(message, type = "info") {
 // Start Application
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  initializeDashboard();
+  // Check if user is authenticated first
+  authService.onAuthStateChanged(async (user) => {
+    if (user) {
+      // 1. Initialize theme from database BEFORE rendering UI
+      console.log("🎨 Fetching theme preference from database...");
+      await themeService.initializeTheme(user.uid);
+      console.log("✅ Theme initialized, starting dashboard...");
+    }
+    // 2. Then initialize dashboard (will redirect if not authenticated)
+    initializeDashboard();
+  });
 });
+
+// -----------------------------
+// Debug overlay helper (temporary)
+// -----------------------------
+function ensureDebugPanel() {
+  if (document.getElementById("debugPanel")) return;
+  const panel = document.createElement("div");
+  panel.id = "debugPanel";
+  panel.style.position = "fixed";
+  panel.style.right = "12px";
+  panel.style.bottom = "12px";
+  panel.style.maxWidth = "320px";
+  panel.style.maxHeight = "40vh";
+  panel.style.overflow = "auto";
+  panel.style.background = "rgba(0,0,0,0.6)";
+  panel.style.color = "#fff";
+  panel.style.fontSize = "12px";
+  panel.style.padding = "8px";
+  panel.style.borderRadius = "8px";
+  panel.style.zIndex = 99999;
+  panel.style.backdropFilter = "blur(4px)";
+  panel.innerHTML =
+    '<strong>DEBUG</strong><hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:6px 0;">';
+  document.body.appendChild(panel);
+}
+
+function debugLog(msg) {
+  try {
+    ensureDebugPanel();
+    const panel = document.getElementById("debugPanel");
+    const line = document.createElement("div");
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    line.style.marginBottom = "6px";
+    panel.appendChild(line);
+    panel.scrollTop = panel.scrollHeight;
+  } catch (e) {
+    // ignore
+  }
+}
+
+// ==========================================
+// CONSOLE DEBUGGING HELPERS
+// ==========================================
+
+/**
+ * Get diagnostic status of pH system
+ * Usage in console: phStatus()
+ */
+function phStatus() {
+  console.clear();
+  console.log("📊 === pH SYSTEM DIAGNOSTIC STATUS ===\n");
+
+  console.log("🔍 STATE INFORMATION:");
+  console.log(`  User ID: ${appState.user?.uid || "NOT LOGGED IN"}`);
+  console.log(`  Loaded Readings: ${appState.phReadings?.length || 0}`);
+
+  if (appState.phReadings && appState.phReadings.length > 0) {
+    const latest = appState.phReadings[appState.phReadings.length - 1];
+    const oldest = appState.phReadings[0];
+    console.log(
+      `  Latest pH: ${latest.value} @ ${new Date(
+        latest.timestamp
+      ).toLocaleTimeString()}`
+    );
+    console.log(
+      `  Oldest pH: ${oldest.value} @ ${new Date(
+        oldest.timestamp
+      ).toLocaleTimeString()}`
+    );
+    console.log(
+      `  Span: ${Math.round((latest.timestamp - oldest.timestamp) / 1000)}s`
+    );
+  }
+
+  console.log("\n🎬 SIMULATION STATE:");
+  console.log(`  Enabled: ${simulationState.enabled}`);
+  console.log(`  Current pH: ${simulationState.currentPH}`);
+  console.log(
+    `  Last Real Data: ${
+      simulationState.lastRealDataTime
+        ? new Date(simulationState.lastRealDataTime).toLocaleTimeString()
+        : "NEVER"
+    }`
+  );
+  console.log(
+    `  Time Since Real Data: ${
+      simulationState.lastRealDataTime
+        ? Math.round((Date.now() - simulationState.lastRealDataTime) / 1000) +
+          "s"
+        : "N/A"
+    }`
+  );
+
+  console.log("\n📱 UI DISPLAY:");
+  const phValueEl = document.getElementById("phValue");
+  const phStatusEl = document.getElementById("phStatus");
+  console.log(`  phValue element: ${phValueEl?.textContent}`);
+  console.log(`  phStatus element: ${phStatusEl?.textContent}`);
+
+  console.log("\n💡 QUICK COMMANDS:");
+  console.log("  forcePhRefresh() - Fetch latest pH from Firebase");
+  console.log("  phStatus() - Show this diagnostic");
+  console.log("  simulationState - View simulation object");
+  console.log("  appState.phReadings - View all loaded readings");
+}
+
+/**
+ * Full diagnostic for database writes
+ * Usage: dbDiagnostic()
+ */
+function dbDiagnostic() {
+  console.clear();
+  console.log("🔍 === DATABASE DIAGNOSTIC ===\n");
+
+  console.log("🔐 AUTHENTICATION:");
+  console.log(`  appState.user: ${appState.user ? "✅ EXISTS" : "❌ NULL"}`);
+  console.log(`  appState.user.uid: ${appState.user?.uid || "❌ MISSING"}`);
+  console.log(`  appState.user.email: ${appState.user?.email || "❌ MISSING"}`);
+
+  console.log("\n📊 pH READINGS STATE:");
+  console.log(
+    `  appState.phReadings length: ${appState.phReadings?.length || 0}`
+  );
+  if (appState.phReadings && appState.phReadings.length > 0) {
+    const latest = appState.phReadings[appState.phReadings.length - 1];
+    console.log(
+      `  Latest pH: ${latest.value} @ ${new Date(
+        latest.timestamp
+      ).toLocaleTimeString()}`
+    );
+  }
+
+  console.log("\n📋 PUMP LOGS STATE:");
+  console.log(`  appState.pumpLogs length: ${appState.pumpLogs?.length || 0}`);
+  if (appState.pumpLogs && appState.pumpLogs.length > 0) {
+    const latest = appState.pumpLogs[appState.pumpLogs.length - 1];
+    console.log(
+      `  Latest: ${latest.type} @ ${new Date(
+        latest.timestamp
+      ).toLocaleTimeString()}`
+    );
+  }
+
+  console.log("\n🧪 WRITE TEST:");
+  console.log("  Ready to test writes. Run:");
+  console.log("    testWrite()  // Tests both pH and pump");
+  console.log("    addPHReading(7.15)  // Test pH only");
+  console.log('    logPumpActivity("basic", "1%")  // Test pump only');
+}
+
+/**
+ * Test database writes with detailed output
+ */
+async function testWrite() {
+  console.clear();
+  console.log("🧪 === DATABASE WRITE TEST ===\n");
+
+  if (!appState.user || !appState.user.uid) {
+    console.error("❌ NOT AUTHENTICATED - Cannot test writes");
+    console.error("   User:", appState.user);
+    return;
+  }
+
+  console.log(`✅ User authenticated: ${appState.user.uid}`);
+  console.log(`✅ Email: ${appState.user.email}\n`);
+
+  // Test 1: pH Write
+  console.log("━━━ TEST 1: pH Write ━━━");
+  const phResult = await addPHReading(7.25);
+  console.log("Result:", phResult);
+
+  // Wait a moment
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // Test 2: Pump Write
+  console.log("\n━━━ TEST 2: Pump Write ━━━");
+  const pumpResult = await logPumpActivity("basic", "1%");
+  console.log("Result:", pumpResult);
+
+  // Wait for listener to fire
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  // Test 3: Verify reads
+  console.log("\n━━━ TEST 3: Verify Reads ━━━");
+  console.log(
+    `pH readings in state: ${appState.phReadings?.length || 0} entries`
+  );
+  console.log(`Pump logs in state: ${appState.pumpLogs?.length || 0} entries`);
+
+  if (appState.pumpLogs.length > 0) {
+    const latest = appState.pumpLogs[appState.pumpLogs.length - 1];
+    console.log(
+      `Latest pump log: ${latest.type} @ ${new Date(
+        latest.timestamp
+      ).toLocaleTimeString()}`
+    );
+  }
+
+  console.log("\n✅ Test complete. Check Firebase Console for new data.");
+}
+
+/**
+ * Test pump logs specifically
+ */
+async function testPumpLog() {
+  console.clear();
+  console.log("🧪 === PUMP LOG TEST ===\n");
+
+  if (!appState.user || !appState.user.uid) {
+    console.error("❌ NOT AUTHENTICATED");
+    return;
+  }
+
+  console.log("Writing pump log to Firebase...");
+  const result = await logPumpActivity("acidic", "1.5%");
+  console.log("Write result:", result);
+
+  console.log("\nWaiting 3 seconds for listener to fire...");
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  console.log("\nFinal state:");
+  console.log(`Pump logs in appState: ${appState.pumpLogs?.length || 0}`);
+  if (appState.pumpLogs.length > 0) {
+    console.log("All logs:", appState.pumpLogs);
+  }
+}
+
+// Expose for console debugging
+window.phStatus = phStatus;
+window.simulationState = simulationState;
+window.dbDiagnostic = dbDiagnostic;
+window.testWrite = testWrite;
+window.testPumpLog = testPumpLog;
 
 // Export for debugging
 window.appState = appState;
