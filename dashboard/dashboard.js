@@ -47,6 +47,13 @@ const appState = {
   chartUpdateTimer: null, // Debounce timer for chart updates
   dataIsContinuous: true, // Track if pH data is continuous
   lastReadingTime: null, // Track last reading for UI display
+  // Simulation state for chatbot context awareness
+  simulationState: {
+    enabled: false,
+    lastRealDataTime: null,
+    interval: null,
+    currentPH: 7.0,
+  },
 };
 
 // ==========================================
@@ -829,14 +836,9 @@ async function loadWeather(location) {
 }
 
 // ==========================================
-// Global Simulation State
+// Global Simulation State (now part of appState above)
 // ==========================================
-const simulationState = {
-  enabled: false,
-  lastRealDataTime: null,
-  interval: null,
-  currentPH: 7.0,
-};
+const simulationState = appState.simulationState; // Reference to appState.simulationState
 
 // ==========================================
 // Load pH Readings with Real-Time Listener
@@ -1200,10 +1202,12 @@ function initializeComponents() {
   }
 
   try {
-    // Chatbot Component
+    // Chatbot Component - Now with context awareness
     const chatbot = new ChatbotComponent("chatbotContainer");
     chatbot.init();
-    console.log("✅ Chatbot component initialized");
+    // CRITICAL: Inject appState for context-aware responses
+    chatbot.setAppState(appState);
+    console.log("✅ Chatbot component initialized with context awareness");
   } catch (e) {
     console.error("❌ Chatbot component error:", e.message);
   }
@@ -1807,18 +1811,7 @@ function updateArduinoStatus(isConnected) {
   appState.systemStatus.arduinoConnected = isConnected;
   appState.systemStatus.lastUpdate = new Date();
   statusComponent.render(appState.systemStatus);
-
-  // Re-attach button listener after re-rendering
-  const connectBtn = document.getElementById("connectArduinoBtn");
-  if (connectBtn) {
-    connectBtn.onclick = () => {
-      if (appState.systemStatus.arduinoConnected) {
-        disconnectArduino();
-      } else {
-        connectArduino();
-      }
-    };
-  }
+  // Note: Button listener is now handled by event delegation in setupEventListeners()
 }
 
 // ==========================================
@@ -1846,17 +1839,16 @@ function setupEventListeners() {
   }
 
   try {
-    // Arduino Connect Button
-    const connectBtn = document.getElementById("connectArduinoBtn");
-    if (connectBtn) {
-      connectBtn.addEventListener("click", () => {
+    // Arduino Connect Button - Use event delegation since button is recreated
+    document.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "connectArduinoBtn") {
         if (appState.systemStatus.arduinoConnected) {
           disconnectArduino();
         } else {
           connectArduino();
         }
-      });
-    }
+      }
+    });
   } catch (e) {
     console.error("❌ Arduino button setup error:", e.message);
   }
