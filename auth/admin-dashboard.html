@@ -345,14 +345,7 @@
                 <h1>🔐 Admin Dashboard</h1>
                 <p class="admin-user">Admin User: <span id="adminEmail">--</span></p>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <a href="admin-data-export.html"
-                    style="padding: 10px 20px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #86efac; border-radius: 8px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;"
-                    onmouseover="this.style.background='rgba(16, 185, 129, 0.3)'; this.style.transform='translateY(-2px)'"
-                    onmouseout="this.style.background='rgba(16, 185, 129, 0.2)'; this.style.transform='translateY(0)'">📥
-                    Export Data</a>
-                <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
-            </div>
+            <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
         </div>
 
         <div class="status-message" id="statusMessage"></div>
@@ -411,23 +404,60 @@
 
         <!-- Export Section -->
         <div>
-            <div class="section-title">📥 Export Data</div>
+            <div class="section-title">📥 Export Data - All Formats</div>
             <div class="export-grid">
+                <!-- JSON Complete -->
                 <div class="export-card">
-                    <div class="export-icon">📄</div>
-                    <div class="export-format">JSON</div>
-                    <div class="export-desc">Raw JSON format</div>
-                    <button class="export-btn" data-format="json">Export as JSON</button>
+                    <div class="export-icon">📋</div>
+                    <div class="export-format">Complete JSON</div>
+                    <div class="export-desc">Full nested structure with all PH readings and pump logs</div>
+                    <button class="export-btn" data-format="json-complete">Export Complete JSON</button>
                 </div>
+
+                <!-- NDJSON (ML) -->
+                <div class="export-card">
+                    <div class="export-icon">🤖</div>
+                    <div class="export-format">ML Training (NDJSON)</div>
+                    <div class="export-desc">Optimized for machine learning frameworks</div>
+                    <button class="export-btn" data-format="ndjson">Export NDJSON</button>
+                </div>
+
+                <!-- CSV All Readings -->
                 <div class="export-card">
                     <div class="export-icon">📊</div>
-                    <div class="export-format">CSV</div>
-                    <div class="export-desc">Spreadsheet format</div>
-                    <button class="export-btn" data-format="csv">Export as CSV</button>
+                    <div class="export-format">Readings CSV</div>
+                    <div class="export-desc">All sensor readings as individual rows</div>
+                    <button class="export-btn" data-format="csv-readings">Export CSV</button>
                 </div>
+
+                <!-- Flattened JSON -->
+                <div class="export-card">
+                    <div class="export-icon">🔄</div>
+                    <div class="export-format">Flattened JSON</div>
+                    <div class="export-desc">User-centered with readings arrays</div>
+                    <button class="export-btn" data-format="json-flattened">Export Flattened</button>
+                </div>
+
+                <!-- Original JSON -->
+                <div class="export-card">
+                    <div class="export-icon">📄</div>
+                    <div class="export-format">JSON (Original)</div>
+                    <div class="export-desc">Original filtered JSON format</div>
+                    <button class="export-btn" data-format="json">Export as JSON</button>
+                </div>
+
+                <!-- Original CSV -->
                 <div class="export-card">
                     <div class="export-icon">📑</div>
-                    <div class="export-format">PDF</div>
+                    <div class="export-format">CSV (Original)</div>
+                    <div class="export-desc">Original CSV summary format</div>
+                    <button class="export-btn" data-format="csv">Export as CSV</button>
+                </div>
+
+                <!-- PDF -->
+                <div class="export-card">
+                    <div class="export-icon">📄</div>
+                    <div class="export-format">PDF Report</div>
                     <div class="export-desc">PDF summary report</div>
                     <button class="export-btn" data-format="pdf">Export as PDF</button>
                 </div>
@@ -708,42 +738,116 @@
 
         // Export data function
         async function exportData(format) {
-            const filteredData = getFilteredData();
-
-            // Check if data is empty
-            const hasData = Object.values(filteredData).some(section =>
-                section && typeof section === "object" && Object.keys(section).length > 0
-            );
-
-            if (!hasData) {
-                throw new Error("No data to export. Please load data first.");
-            }
-
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
 
             switch (format) {
+                // New comprehensive formats
+                case "json-complete":
+                    exportJSONComplete(allData.users, timestamp);
+                    break;
+                case "ndjson":
+                    exportNDJSON(allData.users, timestamp);
+                    break;
+                case "csv-readings":
+                    exportCSVReadings(allData.users, timestamp);
+                    break;
+                case "json-flattened":
+                    exportJSONFlattened(allData.users, timestamp);
+                    break;
+                // Original formats
                 case "json":
+                    const filteredData = getFilteredData();
                     exportJSON(filteredData, timestamp);
                     break;
                 case "csv":
-                    exportCSV(filteredData, timestamp);
+                    const filteredData2 = getFilteredData();
+                    exportCSV(filteredData2, timestamp);
                     break;
                 case "pdf":
-                    await exportPDF(filteredData, timestamp);
+                    const filteredData3 = getFilteredData();
+                    await exportPDF(filteredData3, timestamp);
                     break;
                 default:
                     throw new Error(`Unknown export format: ${format}`);
             }
         }
 
-        // Export as JSON
+        // NEW: Export Complete JSON (All data nested)
+        function exportJSONComplete(users, timestamp) {
+            const content = JSON.stringify(users, null, 2);
+            const blob = new Blob([content], { type: "application/json" });
+            downloadFile(blob, `ecosterile-complete-${timestamp}.json`);
+        }
+
+        // NEW: Export NDJSON (ML Training format)
+        function exportNDJSON(users, timestamp) {
+            let ndjson = '';
+            Object.entries(users).forEach(([userId, userData]) => {
+                const record = {
+                    userId,
+                    profile: userData.profile || {},
+                    location: userData.location || {},
+                    settings: userData.settings || {},
+                    phReadings: userData.phReadings ? Object.values(userData.phReadings) : [],
+                    pumpLogs: userData.pumpLogs ? Object.values(userData.pumpLogs) : []
+                };
+                ndjson += JSON.stringify(record) + '\n';
+            });
+            const blob = new Blob([ndjson], { type: "text/plain" });
+            downloadFile(blob, `ecosterile-ml-${timestamp}.ndjson`);
+        }
+
+        // NEW: Export CSV with all readings
+        function exportCSVReadings(users, timestamp) {
+            let csv = 'userId,userName,email,dataType,timestamp,value,country,state,district\n';
+            Object.entries(users).forEach(([userId, userData]) => {
+                const profile = userData.profile || {};
+                const location = userData.location || {};
+
+                // PH Readings
+                if (userData.phReadings) {
+                    Object.values(userData.phReadings).forEach(reading => {
+                        csv += `${userId},"${profile.name || ''}","${profile.email || ''}",PHReading,"${reading.timestamp || ''}",${reading.value || ''},"${location.country || ''}","${location.state || ''}","${location.district || ''}"\n`;
+                    });
+                }
+
+                // Pump Logs
+                if (userData.pumpLogs) {
+                    Object.values(userData.pumpLogs).forEach(log => {
+                        csv += `${userId},"${profile.name || ''}","${profile.email || ''}",PumpLog,"${log.timestamp || ''}","${log.status || log.pumpedAmount || ''}","${location.country || ''}","${location.state || ''}","${location.district || ''}"\n`;
+                    });
+                }
+            });
+            const blob = new Blob([csv], { type: "text/csv" });
+            downloadFile(blob, `ecosterile-readings-${timestamp}.csv`);
+        }
+
+        // NEW: Export Flattened JSON
+        function exportJSONFlattened(users, timestamp) {
+            const data = [];
+            Object.entries(users).forEach(([userId, userData]) => {
+                data.push({
+                    userId,
+                    profile: userData.profile || {},
+                    location: userData.location || {},
+                    settings: userData.settings || {},
+                    phReadings: userData.phReadings ? Object.values(userData.phReadings) : [],
+                    pumpLogs: userData.pumpLogs ? Object.values(userData.pumpLogs) : []
+                });
+            });
+            const content = JSON.stringify(data, null, 2);
+            const blob = new Blob([content], { type: "application/json" });
+            downloadFile(blob, `ecosterile-flattened-${timestamp}.json`);
+        }
+
+        // ORIGINAL: Export as JSON (Filtered)
         function exportJSON(data, timestamp) {
             const content = JSON.stringify(data, null, 2);
             const blob = new Blob([content], { type: "application/json" });
             downloadFile(blob, `ecosterile-export-${timestamp}.json`);
         }
 
-        // Export as CSV
+        // ORIGINAL: Export as CSV (Filtered)
         function exportCSV(data, timestamp) {
             let csv = "Data Type,ID,Content\n";
 
@@ -761,7 +865,7 @@
             downloadFile(blob, `ecosterile-export-${timestamp}.csv`);
         }
 
-        // Export as PDF
+        // ORIGINAL: Export as PDF
         async function exportPDF(data, timestamp) {
             try {
                 if (!window.jspdf || !window.jspdf.jsPDF) {
