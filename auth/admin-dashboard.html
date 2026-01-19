@@ -345,7 +345,14 @@
                 <h1>🔐 Admin Dashboard</h1>
                 <p class="admin-user">Admin User: <span id="adminEmail">--</span></p>
             </div>
-            <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+            <div style="display: flex; gap: 10px;">
+                <a href="admin-data-export.html"
+                    style="padding: 10px 20px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #86efac; border-radius: 8px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center;"
+                    onmouseover="this.style.background='rgba(16, 185, 129, 0.3)'; this.style.transform='translateY(-2px)'"
+                    onmouseout="this.style.background='rgba(16, 185, 129, 0.2)'; this.style.transform='translateY(0)'">📥
+                    Export Data</a>
+                <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+            </div>
         </div>
 
         <div class="status-message" id="statusMessage"></div>
