@@ -177,6 +177,18 @@ export class ChatbotComponent {
         context: ["help"],
       },
 
+      // Classifier / image model
+      CLASSIFIER: {
+        keywords: ["classifier", "image", "classify", "edgeimpulse", "camera"],
+        context: ["classifier"],
+      },
+
+      // Disease-specific queries
+      DISEASE_QUERY: {
+        keywords: ["angular", "leaf spot", "bean rust", "rust", "disease", "infected"],
+        context: ["disease"],
+      },
+
       // Troubleshooting
       TROUBLESHOOTING: {
         keywords: [
@@ -247,6 +259,25 @@ export class ChatbotComponent {
   }
 
   /**
+   * Open the EdgeImpulse classifier in a new tab (with apiKey if present)
+   */
+  openClassifier() {
+    const url = 'https://smartphone.edgeimpulse.com/classifier.html?apiKey=ei_c19a64056146e76a860ed8f13b222f25a68474dd111149e36822b8f99062cd0a';
+    window.open(url, '_blank', 'noopener');
+  }
+
+  /**
+   * Show the disease modal if present on the page (dashboard or index)
+   */
+  showDiseaseModal() {
+    const m1 = document.getElementById('diseaseModal');
+    const m2 = document.getElementById('diseaseModalDashboard');
+    if (m2) { m2.style.display = 'flex'; window.scrollTo({top:0, behavior:'smooth'}); }
+    else if (m1) { m1.style.display = 'flex'; window.scrollTo({top:0, behavior:'smooth'}); }
+    else { this.addBotMessage('Disease modal not available on this page.'); }
+  }
+
+  /**
    * Initialize and render the chatbot
    */
   init() {
@@ -296,6 +327,10 @@ export class ChatbotComponent {
               autocomplete="off"
             >
             <button class="chatbot-send" id="chatbotSend">Send</button>
+          </div>
+          <div style="display:flex; gap:8px; justify-content:center; padding:10px;">
+            <button id="chatbotOpenClassifier" class="btn btn-secondary" title="Open image classifier">🔬 Open Classifier</button>
+            <button id="chatbotOpenDisease" class="btn btn-secondary" title="Show disease advice">🌱 Disease Advice</button>
           </div>
         </div>
       </div>
@@ -363,6 +398,12 @@ export class ChatbotComponent {
         }
       });
     }
+
+    // Quick action buttons
+    const openCls = document.getElementById('chatbotOpenClassifier');
+    if(openCls) openCls.addEventListener('click', ()=> this.openClassifier());
+    const openDis = document.getElementById('chatbotOpenDisease');
+    if(openDis) openDis.addEventListener('click', ()=> this.showDiseaseModal());
 
     // Close chat when clicking outside
     document.addEventListener("click", (e) => {
@@ -502,6 +543,13 @@ export class ChatbotComponent {
     // Step 2: Generate context-aware response based on detected intent
     const response = this.generateContextualResponse(detectedIntent, message);
 
+    // Normalize: ensure response is a concise, to-the-point string
+    if (typeof response === 'string') {
+      // Trim to first sentence for concise answers when long
+      const firstSentence = response.split(/\n\n|\.\s/)[0];
+      return firstSentence + (response.length > firstSentence.length ? ' — ask for more for details.' : '');
+    }
+
     return response;
   }
 
@@ -513,6 +561,13 @@ export class ChatbotComponent {
     // Check for greetings first
     if (message.match(/^(hello|hi|hey|thanks|thank you|greetings|salaam)/i)) {
       return { type: "GREETING", confidence: 1.0 };
+    }
+
+    // Direct creator/author question -> always respond with project authors
+    if (
+      message.match(/who (created|made|built) (you|this|the bot)|who (is|are) (your )?creator|who built (you|this)/i)
+    ) {
+      return { type: "CREATORS", confidence: 1.0 };
     }
 
     // Try to match against defined intent patterns
@@ -601,6 +656,22 @@ export class ChatbotComponent {
 
       case "HELP_REQUEST":
         return this.handleHelpRequest(message);
+
+      case "CLASSIFIER":
+        return "Open the EdgeImpulse image classifier (it uses your camera or file upload). Click 'Open Classifier' in the assistant or dashboard to start.";
+
+      case "DISEASE_QUERY":
+        // Detect specific disease keywords
+        if (message.includes('angular') || message.includes('leaf spot')) {
+          return this.getDiseaseSummary('angular');
+        }
+        if (message.includes('bean') && message.includes('rust')) {
+          return this.getDiseaseSummary('beanrust');
+        }
+        return "Tell me which disease you see (Angular Leaf Spot, Bean Rust, or Healthy) and I'll give prevention and treatment advice.";
+
+      case "CREATORS":
+        return "Tanmoy Kanoo, Angshswarup Biswas, Ayushman Choudhury";
 
       case "UNKNOWN":
       default:
@@ -1061,6 +1132,19 @@ export class ChatbotComponent {
     }
 
     return response;
+  }
+
+  /**
+   * Return concise disease summary (one-line + short action list)
+   */
+  getDiseaseSummary(key) {
+    if (key === 'angular') {
+      return "Angular leaf spot: bacterial disease on cucurbits causing angular water-soaked spots that become necrotic. Prevention: use disease-free seed, rotate crops 2–3 years, improve airflow, avoid overhead watering. Organic: neem, baking-soda or garlic sprays; Chemical: copper-based sprays if needed. Remove infected tissue and disinfect tools.";
+    }
+    if (key === 'beanrust') {
+      return "Bean rust: fungal disease producing pustules on bean leaves leading to defoliation. Prevention: rotate crops, space plants for airflow, use drip irrigation, plant resistant varieties. Organic: neem or Bacillus-based biofungicides; Chemical: strobilurin or copper fungicides as a last resort. Remove infected parts and clean debris.";
+    }
+    return "Plant appears healthy: continue good cultural practices — proper spacing, morning watering, and monitor pH (6.0–7.0).";
   }
 
   /**

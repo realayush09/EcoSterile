@@ -3,6 +3,9 @@
  * Renders the top navigation bar with theme toggle, user menu, etc.
  */
 
+import { notificationService } from "../services/notification-service.js";
+import { themeService } from "../services/theme-service.js";
+
 export class HeaderComponent {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -43,6 +46,18 @@ export class HeaderComponent {
         </div>
 
         <div class="header-right">
+          <!-- notification bell with unread count -->
+          <button id="notifBtn" class="header-btn notif-btn">
+            <span class="bell-icon">🔔</span>
+            <span id="notifCount" class="notif-count"></span>
+          </button>
+          <div id="notifDropdown" class="dropdown hidden"></div>
+
+          <!-- theme toggle button -->
+          <button id="themeToggle" class="header-btn theme-btn">
+            <span id="themeIcon">🌗</span>
+          </button>
+
           <button id="userMenu" class="header-btn user-btn">
             <span class="user-icon">👤</span>
             <span class="user-name">${this.user?.displayName || "User"}</span>
@@ -68,6 +83,24 @@ export class HeaderComponent {
     this.updateTime();
     setInterval(() => this.updateTime(), 1000);
 
+    // Notification button and dropdown
+    const notifBtn = document.getElementById("notifBtn");
+    const notifDropdown = document.getElementById("notifDropdown");
+    notifBtn.addEventListener("click", () => {
+      notifDropdown.classList.toggle("hidden");
+      if (!notifDropdown.classList.contains("hidden")) {
+        this.renderNotifications();
+        notificationService.markAllRead();
+        this.refreshNotificationBadge();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+        notifDropdown.classList.add("hidden");
+      }
+    });
+
     // User menu dropdown
     const userMenu = document.getElementById("userMenu");
     const dropdown = document.getElementById("userDropdown");
@@ -87,6 +120,15 @@ export class HeaderComponent {
     const lidarLink = document.getElementById("lidarLink");
     const profileLink = document.getElementById("profileLink");
     const settingsLink = document.getElementById("settingsLink");
+
+    // Theme toggle handler
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", async () => {
+        const newTheme = await themeService.toggleTheme();
+        this.updateThemeIcon(newTheme);
+      });
+    }
 
     if (lidarLink) {
       lidarLink.addEventListener("click", (e) => {
@@ -118,14 +160,10 @@ export class HeaderComponent {
 
   /**
    * Toggle theme between light and dark
+   * (deprecated, use themeService instead)
    */
   toggleTheme() {
-    const html = document.documentElement;
-    const currentTheme = html.getAttribute("data-theme");
-    const newTheme = currentTheme === "dark" ? "light" : "dark";
-
-    html.setAttribute("data-theme", newTheme);
-    localStorage.setItem("ecoSterile-theme", newTheme);
+    return themeService.toggleTheme();
   }
 
   /**
@@ -148,6 +186,49 @@ export class HeaderComponent {
   async handleLogout() {
     // This will be implemented in the dashboard
     window.dispatchEvent(new CustomEvent("logout"));
+  }
+
+  /**
+   * Update the icon inside the theme toggle button
+   */
+  updateThemeIcon(theme) {
+    const icon = document.getElementById("themeIcon");
+    if (!icon) return;
+    icon.textContent = theme === "dark" ? "🌙" : "☀️";
+  }
+
+  /**
+   * Refresh unread badge count
+   */
+  refreshNotificationBadge() {
+    const countEl = document.getElementById("notifCount");
+    if (!countEl) return;
+    const count = notificationService.getUnreadCount();
+    countEl.textContent = count > 0 ? count : "";
+  }
+
+  /**
+   * Render all notifications inside dropdown
+   */
+  renderNotifications() {
+    const list = notificationService.getAll();
+    const container = document.getElementById("notifDropdown");
+    if (!container) return;
+    if (list.length === 0) {
+      container.innerHTML = `<div class="dropdown-item">No notifications</div>`;
+      return;
+    }
+
+    container.innerHTML = list
+      .map(
+        (n) => `
+        <div class="dropdown-item notification-item">
+          <strong>${n.title}</strong><br>
+          <span class="notif-body">${n.body}</span><br>
+          <small class="notif-time">${new Date(n.timestamp).toLocaleString()}</small>
+        </div>`
+      )
+      .join("");
   }
 
   /**
